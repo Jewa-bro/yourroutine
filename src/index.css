@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  body {
+    @apply bg-gray-50 text-gray-800 touch-pan-y;
+    overscroll-behavior-y: none;
+  }
+
+  h1 {
+    @apply text-2xl md:text-3xl font-bold;
+  }
+
+  h2 {
+    @apply text-xl md:text-2xl font-bold;
+  }
+
+  h3 {
+    @apply text-lg md:text-xl font-semibold;
+  }
+
+  /* 모바일 터치 최적화 */
+  button, a {
+    @apply select-none touch-manipulation;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 active:scale-95;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 text-white hover:bg-primary-600 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply btn bg-secondary-400 text-white hover:bg-secondary-500 focus:ring-secondary-400;
+  }
+
+  .btn-accent {
+    @apply btn bg-accent-500 text-white hover:bg-accent-600 focus:ring-accent-500;
+  }
+
+  .btn-outline {
+    @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50;
+  }
+
+  .card {
+    @apply bg-white rounded-xl shadow-md p-4 transition-all duration-300;
+  }
+
+  .form-input {
+    @apply w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50;
+    @apply text-base md:text-sm; /* 모바일에서 더 큰 텍스트 */
+  }
+
+  .form-select {
+    @apply w-full rounded-lg border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50;
+    @apply text-base md:text-sm; /* 모바일에서 더 큰 텍스트 */
+  }
+
+  .form-checkbox {
+    @apply h-5 w-5 rounded text-primary-600 border-gray-300 focus:ring-primary-500;
+  }
+
+  .form-radio {
+    @apply border-gray-300 text-primary-500 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50;
+    @apply w-5 h-5 md:w-4 md:h-4; /* 모바일에서 더 큰 라디오 버튼 */
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-100 text-primary-800;
+  }
+
+  .badge-secondary {
+    @apply badge bg-secondary-100 text-secondary-800;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent-100 text-accent-800;
+  }
+
+  .badge-success {
+    @apply badge bg-success-100 text-success-800;
+  }
+
+  .badge-warning {
+    @apply badge bg-warning-100 text-warning-800;
+  }
+
+  .badge-error {
+    @apply badge bg-error-100 text-error-800;
+  }
+
+  /* 모바일 최적화 클래스 */
+  .mobile-safe-area {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .mobile-touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  .mobile-bottom-nav {
+    @apply fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-2;
+    padding-bottom: calc(0.5rem + env(safe-area-inset-bottom));
+  }
+
+  .toggle-btn-left, .toggle-btn-right {
+    @apply px-4 py-2.5 text-sm font-semibold flex-1 text-center transition-colors duration-200;
+  }
+  .toggle-btn-left {
+    @apply rounded-l-lg;
+  }
+  .toggle-btn-right {
+    @apply rounded-r-lg;
+  }
+  .toggle-btn-left:not(.active), .toggle-btn-right:not(.active) {
+    @apply bg-gray-100 text-gray-600 hover:bg-gray-200;
+  }
+  .toggle-btn-left.active, .toggle-btn-right.active {
+    @apply bg-primary-500 text-white shadow-md;
+  }
+}
+
+/* 애니메이션 정의 */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+.animate-slideInUp {
+  animation: slideInUp 0.5s ease-out;
+}
+
+.animate-pulse-slow {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* 스크롤바 스타일링 */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c5c5c5;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a0a0a0;
+}
+
+/* 모바일 터치 최적화 */
+@media (max-width: 768px) {
+  .touch-scroll {
+    -webkit-overflow-scrolling: touch;
+    scroll-behavior: smooth;
+  }
+
+  .touch-callout-none {
+    -webkit-touch-callout: none;
+  }
+
+  .tap-highlight-transparent {
+    -webkit-tap-highlight-color: transparent;
+  }
+}

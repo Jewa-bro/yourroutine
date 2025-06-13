@@ -1,0 +1,38 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+### I. Requirements Understanding & Problem-Solving Strategy
+1.  **Clarify Requirements Thoroughly**: Before any coding, ensure a complete understanding of the task. If requirements are ambiguous, ask clarifying questions rather than making assumptions.
+2.  **Strategic Problem Solving & Debugging**:
+    * **Hypothesis-Driven Approach**: When addressing issues, hypothesize the cause, analyze relevant code/data to confirm, then implement a targeted fix. Aim to resolve the root cause, not just symptoms.
+    * **Re-evaluation in Deadlocks**: If initial attempts to fix an issue fail or the cause remains unclear, **immediately pause further modifications and follow these steps**:
+        1.  **Step Back**: Re-evaluate current assumptions and the chosen approach.
+        2.  **Explore Multiple Perspectives**: Devise at least **two alternative solution strategies or viewpoints**. Explicitly list and compare the pros and cons of each.
+        3.  **Discuss with User/Reviewer**: Discuss the new strategies with the user (or a peer developer) to get feedback and decide on the optimal path forward.
+    * **Utilize Logging**: When debugging unclear issues, insert strategic logging for analysis rather than making speculative changes.
+3.  **State Limitations**: If unable to fulfill a request completely or if uncertainties exist, clearly communicate these limitations to the user.
+4.  **User-Centric Assistance**: When the user indicates difficulty in understanding code or technical aspects, tailor explanations and assistance to their stated level of understanding. Proactively offer clearer guidance and ensure the user feels well-supported, especially when they rely on the AI's judgment for code modifications.
+### II. Design, Architecture & Documentation
+1.  **Principled Design & Concise Architecture**:
+    * For new features or significant changes, ensure a design document or specification is created or updated before writing code.
+    * Aim for **high cohesion and low coupling**, clearly separating concerns. Prioritize designs that are easy to extend and maintain.
+    * **Prioritize Established Best Practices & Standard Patterns**: Give preference to proven design patterns and architectures. Opt for the **simplest and clearest structure** suitable for the problem. Favor **standard and easily understandable approaches** over overly complex or obscure solutions, even if the latter seem to "just work."
+### III. Code Quality & Craftsmanship
+1.  **Clear and Concise Code (Self-Documenting Code)**:
+    * Use clear, descriptive names for variables, functions, and classes that reveal their purpose.
+    * Write code that is as simple, direct, and readable as possible, allowing the structure itself to be a primary source of understanding.
+2.  **Essential & Minimalist Comments**:
+    * Add comments only to explain complex logic, non-obvious design decisions, or the "why" behind a piece of code if it's not immediately clear from the code itself.
+    * Avoid comments that merely restate what the code does. Keep comments brief, accurate, updated with code changes, and remove commented-out code.
+3.  **Consistency & Adherence to Standards**: Consistently follow established coding style guides (e.g., PEP 8 for Python) for formatting, naming, and structure.
+4.  **DRY (Don't Repeat Yourself) Principle**: Eliminate redundancy by abstracting common logic into reusable functions or classes.
+5.  **KISS (Keep It Simple, Stupid) & YAGNI (You Ain't Gonna Need It) Principles**: Always prefer simpler solutions. Do not implement functionality not explicitly required.
+6.  **Robust Error Handling & Input Validation**: Implement comprehensive error handling using specific exceptions. Validate and sanitize all external inputs to prevent vulnerabilities and ensure graceful failure.
+### IV. Refactoring & Maintenance
+1.  **User Confirmation for Major Refactoring**: For substantial refactoring, present different approaches with their pros/cons to the user and get explicit approval before proceeding.
+2.  **Continuous Improvement (Boy Scout Rule)**: Leave the code cleaner than you found it through small, incremental refactorings.
+### V. Core Considerations
+1.  **Security First**: Always prioritize secure coding practices relevant to the language and platform. Be aware of common vulnerabilities (e.g., OWASP Top 10) and actively mitigate them.
+2.  **Performance Awareness**: Write efficient code, but **avoid premature optimization**. Profile and optimize only when a bottleneck is identified and proven.
