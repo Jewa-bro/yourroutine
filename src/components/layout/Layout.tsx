@@ -39,7 +39,7 @@ const Layout: React.FC = () => {
       <Navbar />
       
       <motion.main
-        className="flex-1 w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 overflow-y-auto"
+        className="flex-1 w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6 overflow-y-auto overscroll-contain"
         drag={isSwipeablePage ? "x" : false}
         dragConstraints={{ left: 0, right: 0 }}
         dragElastic={0.2}

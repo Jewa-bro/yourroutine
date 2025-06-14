@@ -13,7 +13,7 @@ const BottomNavbar: React.FC = () => {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 shadow-[0_-1px_4px_rgba(0,0,0,0.08)] z-[100] lg:hidden transform-gpu">
+    <nav className="fixed bottom-0 left-0 right-0 h-20 bg-white border-t border-gray-200 shadow-[0_-1px_4px_rgba(0,0,0,0.08)] z-[100] lg:hidden will-change-transform">
       <div className="flex justify-around items-center h-full max-w-lg mx-auto px-4">
         {navLinks.map((link) => {
           const isActive = location.pathname.startsWith(link.path);
