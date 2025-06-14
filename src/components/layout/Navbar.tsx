@@ -3,9 +3,11 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../../store/useStore';
 import { Bell, CalendarDays, Home, ListChecks, UserCircle2, Menu, Settings, User, LogOut } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../../lib/supabaseClient';
 
 interface NavbarProps {
   toggleSidebar?: () => void;
+  handleSignOut: () => void;
 }
 
 const navLinks = [
@@ -14,7 +16,7 @@ const navLinks = [
     { name: '캘린더', path: '/calendar', icon: CalendarDays },
 ];
 
-const Navbar: React.FC = () => {
+const Navbar: React.FC<NavbarProps> = ({ handleSignOut }) => {
   const { user, setUser } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
@@ -26,12 +28,9 @@ const Navbar: React.FC = () => {
   const avatarUrl = getUserAvatar();
 
   const handleLogout = () => {
-    if (setUser) {
-      setUser(null);
-    }
-    navigate('/login');
+    handleSignOut();
     setProfileMenuOpen(false);
-  }
+  };
 
   return (
     <nav className="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-gray-200 bg-white/95">

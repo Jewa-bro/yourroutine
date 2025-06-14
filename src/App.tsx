@@ -62,6 +62,11 @@ function App() {
     setIsClient(true);
   }, []);
 
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    // onAuthStateChange가 자동으로 setUser(null)과 navigate를 처리합니다.
+  };
+
   // 인증 상태가 준비되지 않았으면 로딩 스피너 표시
   if (!isAuthReady) {
     return (
@@ -78,7 +83,7 @@ function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route element={<ProtectedRoute />}>
-          <Route element={<Layout />}>
+          <Route element={<Layout handleSignOut={handleSignOut} />}>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/routines" element={<RoutinePage />} />
