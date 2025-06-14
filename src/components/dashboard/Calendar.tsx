@@ -213,7 +213,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     head_cell: 'flex-1 text-center p-2 border-b',
     body: 'flex-grow flex flex-col',
     row: 'flex flex-grow',
-    cell: 'flex-1 relative border-r border-b last:border-r-0',
+    cell: 'flex-1 relative border-r border-b last:border-r-0 min-w-0',
     day: 'w-full h-full hover:bg-gray-50',
     day_selected: 'bg-primary-100 hover:bg-primary-100 font-semibold',
     day_today: 'bg-primary-50',
