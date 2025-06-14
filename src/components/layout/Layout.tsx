@@ -38,17 +38,22 @@ const Layout: React.FC = () => {
     <div className="min-h-screen bg-gray-50 flex flex-col">
       <Navbar />
       
-      <motion.main
-        className="flex-1 w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6"
-        drag={isSwipeablePage ? "x" : false}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={0.2}
-        onDragEnd={onDragEnd}
-      >
-        <Outlet />
-      </motion.main>
+      <div className="flex-1 relative">
+        <motion.main
+          className="w-full max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-24 lg:pb-6"
+          drag={isSwipeablePage ? "x" : false}
+          dragConstraints={{ left: 0, right: 0 }}
+          dragElastic={0.2}
+          onDragEnd={onDragEnd}
+          style={{ position: 'relative', zIndex: 1 }}
+        >
+          <Outlet />
+        </motion.main>
+      </div>
       
-      <BottomNavbar />
+      <div className="fixed bottom-0 left-0 right-0 z-[100]">
+        <BottomNavbar />
+      </div>
     </div>
   );
 };
