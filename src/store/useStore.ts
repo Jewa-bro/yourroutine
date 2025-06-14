@@ -108,108 +108,67 @@ export const useStore = create<StoreState>((set, get) => ({
   editingTodo: null,
   
   setUser: (user) => {
-    console.log('[useStore] setUser 호출됨:', user);
+    set({ 
+      user, 
+      // 사용자가 바뀌면, 데이터는 아직 불러오지 않은 상태로 리셋.
+      initialDataFetched: false 
+    });
+    // 로그아웃 시, 나머지 데이터를 비우는 로직은 onAuthStateChange에서 처리
     if (!user) {
-      localStorage.removeItem('loggedInUser');
-      set({ 
-        user: null, 
-        initialDataFetched: false, 
-        routines: [], 
-        todos: [], 
-        diaries: [], 
-        routineInstances: {} 
+      set({
+        routines: [],
+        todos: [],
+        diaries: [],
+        routineInstances: {},
       });
-    } else {
-      set({ user });
-      // 로그인 시, 오늘 날짜 기준 월의 데이터를 가져옵니다.
-      const today = new Date();
-      get().fetchRoutineCompletionsForMonth(today.getFullYear(), today.getMonth() + 1);
     }
   },
 
   fetchInitialData: async () => {
     if (get().loading) return;
+    
+    const user = get().user;
+    // user가 없으면 데이터를 불러올 수 없으므로 중단
+    if (!user) {
+      set({ loading: false, initialDataFetched: true });
+      return;
+    }
+    
     set({ loading: true });
-
+    
     try {
-      let userToSet: User | null = null;
-      const storedUserString = localStorage.getItem('loggedInUser');
-  
-      if (storedUserString) {
-        try {
-          const storedUser = JSON.parse(storedUserString);
-          
-          const { data: userProfileFromDb, error: profileError } = await supabase
-            .from('custom_users') 
-            .select('id, username, created_at, full_name, avatar_url, bio') 
-            .eq('id', storedUser.id)
-            .single();
-  
-          if (profileError && profileError.code !== 'PGRST116') {
-            console.error('Error fetching user details from DB for auto-login:', profileError);
-            localStorage.removeItem('loggedInUser'); 
-          } else if (userProfileFromDb) {
-            userToSet = {
-              id: userProfileFromDb.id,
-              email: userProfileFromDb.username, 
-              user_metadata: { 
-                name: userProfileFromDb.username, 
-                full_name: userProfileFromDb.full_name,
-                avatar_url: userProfileFromDb.avatar_url,
-                bio: userProfileFromDb.bio,
-              },
-              created_at: userProfileFromDb.created_at,
-            };
-          } else {
-            localStorage.removeItem('loggedInUser');
-          }
-        } catch (e) {
-          console.error('Error parsing stored user or fetching from DB:', e);
-          localStorage.removeItem('loggedInUser'); 
-        }
-      }
+      const userId = user.id;
+
+      // 여러 데이터를 병렬로 가져옵니다.
+      const [
+        { data: routinesData, error: routinesError },
+        { data: todosData, error: todosError },
+        { data: diariesData, error: diariesError },
+      ] = await Promise.all([
+        supabase.from('routines').select('*').eq('user_id', userId).order('sort_order', { ascending: true }),
+        supabase.from('todos').select('*').eq('user_id', userId),
+        supabase.from('diary_entries').select('*').eq('user_id', userId),
+      ]);
+
+      if (routinesError) throw routinesError;
+      if (todosError) throw todosError;
+      if (diariesError) throw diariesError;
+
+      // 가져온 데이터로 상태를 업데이트합니다.
+      set({
+        routines: routinesData || [],
+        todos: todosData ? todosData.map(mapSupabaseTodoToLocal) : [],
+        diaries: diariesData?.map(d => ({...d, date: d.entry_date, id: d.id.toString() } as Diary)) || [],
+      });
       
-      if (userToSet) {
-        if (!get().user || get().user?.id !== userToSet.id) {
-          set({ user: userToSet });
-        }
+      // 현재 월의 루틴 완료 기록도 가져옵니다.
+      const today = new Date();
+      await get().fetchRoutineCompletionsForMonth(today.getFullYear(), today.getMonth() + 1);
 
-        const userId = userToSet.id;
-        const { data: todosFromSupabase, error: todosError } = await supabase
-          .from('todos')
-          .select('*') // 더 이상 tags join 불필요
-          .eq('user_id', userId);
-        if (todosError) {
-          console.error('Error fetching todos:', todosError);
-          set({ todos: [] });
-        } else {
-          set({ todos: todosFromSupabase ? todosFromSupabase.map(mapSupabaseTodoToLocal) : [] });
-        }
-  
-        await get().fetchRoutines();
-        
-        const { data: diariesFromSupabase, error: diariesError } = await supabase
-          .from('diary_entries')
-          .select('*') 
-          .eq('user_id', userId);
-        if (diariesError) {
-          console.error('Error fetching diaries:', diariesError);
-          set({ diaries: [] });
-        } else {
-          const diaries = diariesFromSupabase?.map(d => ({...d, date: d.entry_date, id: d.id.toString() } as Diary)) || [];
-          set({ diaries: diaries });
-        }
-
-        // 현재 월의 루틴 완료 기록을 가져와 routineInstances를 채웁니다.
-        const today = new Date();
-        await get().fetchRoutineCompletionsForMonth(today.getFullYear(), today.getMonth() + 1);
-
-      } else {
-        // 사용자 정보가 없으면 모든 데이터를 초기화
-        set({ user: null, todos: [], routines: [], diaries: [], routineInstances: {} });
-      }
     } catch (error) {
         console.error("Error during initial data fetch:", error);
+        // 에러 발생 시 데이터 초기화
+        set({ routines: [], todos: [], diaries: [] });
     } finally {
         set({ loading: false, initialDataFetched: true });
     }
