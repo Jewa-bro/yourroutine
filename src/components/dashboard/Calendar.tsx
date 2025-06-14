@@ -95,6 +95,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     // 루틴 완료 상태 (불꽃 아이콘)
     let flameIconContent: string | null = null;
     let flameIconStyle: React.CSSProperties = {};
+    const dateStr = format(date, 'yyyy-MM-dd');
     if (!isBefore(date, startOfDay(new Date(routines[0]?.created_at || new Date())))) {
       const completionStatus = getRoutineCompletionStatusForDate(date);
       if (completionStatus === 'ALL_COMPLETE') {
@@ -142,25 +143,32 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     }
 
     // 큰 달력 (캘린더 페이지) 뷰
+    const eventsForDay = [
+      ...(hasDiary ? [{ id: `diary-${dateStr}`, content: '일기', completed: false, type: 'diary' as const }] : []),
+      ...todosForDay.map(t => ({ id: t.id, content: t.content, completed: t.completed, type: 'todo' as const }))
+    ];
+    
     const maxVisibleEvents = 3;
-    const visibleTodos = todosForDay.slice(0, maxVisibleEvents);
-    const hiddenTodosCount = todosForDay.length - maxVisibleEvents;
+    const visibleEvents = eventsForDay.slice(0, maxVisibleEvents);
+    const hiddenEventsCount = eventsForDay.length - maxVisibleEvents;
 
     return (
       <div className="flex flex-col h-full p-1.5 overflow-hidden">
         <div className="flex items-center">
           <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
-          {!isOutside && hasDiary && <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full ml-1.5"></div>}
           {!isOutside && flameIconContent && <span className="ml-auto text-sm" style={{ ...flameIconStyle }}>{flameIconContent}</span>}
         </div>
-        <div className="flex-grow space-y-1 mt-1 text-xs">
-          {visibleTodos.map(todo => (
-            <div key={todo.id} title={todo.content} className={`p-1 rounded-md text-left text-white ${todo.completed ? 'bg-green-500' : 'bg-sky-500'}`}>
-              <MarqueeText text={todo.content} />
+        <div className="flex-grow space-y-1 mt-1 text-xs overflow-hidden">
+          {visibleEvents.map(event => (
+            <div key={event.id} title={event.content} className={`p-1 rounded-md text-left text-white ${
+              event.type === 'diary' ? 'bg-amber-500' :
+              event.completed ? 'bg-green-500' : 'bg-sky-500'
+            }`}>
+              <MarqueeText text={event.content} />
             </div>
           ))}
-          {hiddenTodosCount > 0 && (
-             <div className="text-gray-500 text-center text-[10px] pt-1">+ {hiddenTodosCount} more</div>
+          {hiddenEventsCount > 0 && (
+             <div className="text-gray-500 text-center text-[10px] pt-1">+ {hiddenEventsCount} more</div>
           )}
         </div>
       </div>
@@ -191,7 +199,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
   };
 
   const defaultCalendarClasses = {
-    root: 'bg-white w-full h-full flex flex-col border-t',
+    root: 'bg-white w-full h-full flex flex-col',
     months: 'w-full h-full flex flex-col',
     month: 'w-full h-full flex flex-col flex-grow',
     caption: 'flex justify-center relative items-center py-4 px-2 border-b',
@@ -205,7 +213,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     head_cell: 'flex-1 text-center p-2 border-b',
     body: 'flex-grow flex flex-col',
     row: 'flex w-full flex-grow',
-    cell: 'flex-1 relative text-center p-0 border-r border-b first:border-l-0 last:border-r-0',
+    cell: 'flex-1 relative border-r border-b first:border-l last:border-r-0',
     day: 'w-full h-full hover:bg-gray-50',
     day_selected: 'bg-primary-100 hover:bg-primary-100 font-semibold',
     day_today: 'bg-primary-50',
