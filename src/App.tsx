@@ -17,85 +17,59 @@ import TodoFormModal from './components/todos/TodoFormModal';
 import { useStore } from './store/useStore';
 import { Routine } from './types';
 import { format, startOfDay } from 'date-fns';
+import { supabase } from './lib/supabaseClient';
 
 function App() {
-  const { user, routines, fetchInitialData, initialDataFetched } = useStore();
+  const { user, setUser, fetchInitialData } = useStore();
+  const [isAuthReady, setAuthReady] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const [isClient, setIsClient] = useState(false);
 
+  useEffect(() => {
+    // 1. 앱 시작 시 Supabase 세션을 확인하여 자동 로그인 처리
+    const checkUserSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        setUser(session.user); // Zustand 스토어에 사용자 정보 저장
+        await fetchInitialData(); // 사용자 관련 모든 데이터 불러오기
+      }
+      setAuthReady(true); // 인증 상태 준비 완료
+    };
+
+    checkUserSession();
+
+    // 2. 인증 상태 변경 감지 (로그인/로그아웃)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null); // 로그인/로그아웃 시 스토어 업데이트
+        if (_event === 'SIGNED_IN') {
+          fetchInitialData();
+          navigate('/dashboard');
+        }
+        if (_event === 'SIGNED_OUT') {
+          navigate('/login');
+        }
+      }
+    );
+
+    // 3. 컴포넌트 언마운트 시 구독 해제
+    return () => subscription.unsubscribe();
+  }, [setUser, fetchInitialData, navigate]);
+
+  // isClient 로직은 그대로 유지
+  const [isClient, setIsClient] = useState(false);
   useEffect(() => {
     setIsClient(true);
   }, []);
-  
-  useEffect(() => {
-    if (!isClient || initialDataFetched) {
-      return;
-    }
 
-    if (user || localStorage.getItem('loggedInUser')) {
-      console.log('[App.tsx] Initial data fetch triggered.');
-        fetchInitialData();
-    }
-  }, [user, fetchInitialData, initialDataFetched, isClient]);
-
-  useEffect(() => {
-    if (!isClient || !(user && routines.length > 0)) {
-        console.log('[App.tsx] Redirect check skipped (not client, or no user/routines). User:', user, 'Routines length:', routines.length, 'Pathname:', location.pathname);
-        return;
-    }
-
-    console.log('[App.tsx] Redirect check effect (client-side). User:', user, 'Routines length:', routines.length, 'Pathname:', location.pathname);
-
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinutes = now.getMinutes();
-      let foundUncheckedPastRoutine = false;
-
-      for (const routine of routines) {
-      const createdAt = startOfDay(new Date(routine.created_at));
-      if (startOfDay(now) < createdAt) {
-        continue;
-      }
-      
-        const todayDayOfWeek = now.getDay();
-        const isToday = routine.daysofweek && routine.daysofweek.includes(todayDayOfWeek);
-        const isUnchecked = routine.status === 'unchecked';
-        
-        if (!isUnchecked || !isToday) continue;
-
-      if (typeof routine.endTime !== 'string' || !routine.endTime.includes(':')) {
-        console.warn(`[App.tsx] Invalid or missing endTime for routine: ${routine.name}`);
-        continue;
-      }
-
-        const [routineHour, routineMinutes] = routine.endTime.split(':').map(Number);
-      
-      if (isNaN(routineHour) || isNaN(routineMinutes)) {
-        console.warn(`[App.tsx] Could not parse endTime for routine: ${routine.name} (endTime: ${routine.endTime})`);
-        continue;
-      }
-
-        const isPastDue = routineHour < currentHour || (routineHour === currentHour && routineMinutes < currentMinutes);
-
-        console.log(`[App.tsx] Checking routine: ${routine.name}, Status: ${routine.status}, Today: ${isToday}, Unchecked: ${isUnchecked}, Ends: ${routine.endTime}, PastDue: ${isPastDue}`);
-
-        if (isPastDue) {
-          foundUncheckedPastRoutine = true;
-          break; 
-        }
-      }
-      
-      console.log('[App.tsx] hasUncheckedPastRoutines:', foundUncheckedPastRoutine);
-
-      if (foundUncheckedPastRoutine && location.pathname !== '/routine-check' && location.pathname !== '/login' && location.pathname !== '/signup') {
-        console.log('[App.tsx] Navigating to /routine-check because of unchecked past routines.');
-        navigate('/routine-check', { replace: true });
-      } else {
-      console.log('[App.tsx] No navigation needed or already on a restricted page for past routines.');
-    }
-
-  }, [user, routines, location.pathname, navigate, isClient]);
+  // 인증 상태가 준비되지 않았으면 로딩 스피너 표시
+  if (!isAuthReady) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 antialiased">
