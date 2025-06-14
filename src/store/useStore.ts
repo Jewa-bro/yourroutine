@@ -109,33 +109,21 @@ export const useStore = create<StoreState>((set, get) => ({
   
   setUser: (user) => {
     set({ 
-      user, 
-      // 사용자가 바뀌면, 데이터는 아직 불러오지 않은 상태로 리셋.
-      initialDataFetched: false 
+      user,
+      initialDataFetched: !user, // 사용자가 있으면 데이터 다시 불러와야 함
     });
-    // 로그아웃 시, 나머지 데이터를 비우는 로직은 onAuthStateChange에서 처리
     if (!user) {
-      set({
-        routines: [],
-        todos: [],
-        diaries: [],
-        routineInstances: {},
-      });
+      set({ routines: [], todos: [], diaries: [], routineInstances: {} });
     }
   },
 
   fetchInitialData: async () => {
-    if (get().loading) return;
-    
     const user = get().user;
-    // user가 없으면 데이터를 불러올 수 없으므로 중단
-    if (!user) {
-      set({ loading: false, initialDataFetched: true });
+    if (!user || get().loading) {
+      set({ initialDataFetched: true });
       return;
     }
-    
     set({ loading: true });
-    
     try {
       const userId = user.id;
 
@@ -322,8 +310,8 @@ export const useStore = create<StoreState>((set, get) => ({
   
   // 루틴 관련 액션
   addRoutine: async (routineData) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated");
     
     const existingRoutines = get().routines;
     const maxSortOrder = existingRoutines.reduce((max, r) => {
@@ -336,7 +324,7 @@ export const useStore = create<StoreState>((set, get) => ({
 
     const dataToInsert = { 
       ...routineData, 
-      user_id: currentUser.id,
+      user_id: user.id,
       daysofweek: Array.isArray(routineData.daysofweek) ? routineData.daysofweek : [],
       trigger: routineData.trigger || undefined,
       startTime: routineData.startTime || undefined,
@@ -363,8 +351,8 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
   updateRoutine: async (id, routineUpdate) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in for update");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated for update");
 
     const updateToApply: Partial<Omit<Routine, 'status'>> & { user_id?: string } = {
       ...routineUpdate,
@@ -384,7 +372,7 @@ export const useStore = create<StoreState>((set, get) => ({
       .from('routines')
       .update(updateToApply)
       .eq('id', id)
-      .eq('user_id', currentUser.id) 
+      .eq('user_id', user.id) 
       .select()
       .single();
     if (error) {
@@ -402,13 +390,13 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
   deleteRoutine: async (id) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in for delete");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated for delete");
     const { error } = await supabase
       .from('routines')
       .delete()
       .eq('id', id)
-      .eq('user_id', currentUser.id); 
+      .eq('user_id', user.id); 
     if (error) {
       console.error('Error deleting routine:', error);
       throw error;
@@ -420,8 +408,8 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   
   setRoutineStatus: async (id, completed_date, status) => {
-    const userId = get().user?.id;
-    if (!userId) throw new Error('User not logged in');
+    const user = get().user;
+    if (!user) throw new Error('User not authenticated');
 
     // DB 업데이트
     const { error: upsertError } = await supabase
@@ -429,7 +417,7 @@ export const useStore = create<StoreState>((set, get) => ({
       .upsert(
         {
           routine_id: id,
-          user_id: userId,
+          user_id: user.id,
           completed_date: completed_date,
           status: status,
         },
@@ -462,7 +450,7 @@ export const useStore = create<StoreState>((set, get) => ({
   // 할 일 관련 액션
   addTodo: async (todoData) => {
     const user = get().user;
-    if (!user) throw new Error("User not logged in");
+    if (!user) throw new Error("User not authenticated");
     
     const dataToInsert = {
       user_id: user.id,
@@ -511,6 +499,8 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
   deleteTodo: async (id) => {
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated");
     const { error } = await supabase
       .from('todos')
       .delete()
@@ -525,6 +515,8 @@ export const useStore = create<StoreState>((set, get) => ({
     }));
   },
   toggleTodoCompletion: async (id) => {
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated");
     const todoToToggle = get().todos.find(t => t.id === id);
     if (!todoToToggle) return;
 
@@ -550,12 +542,12 @@ export const useStore = create<StoreState>((set, get) => ({
 
   // 일기 관련 액션
   addDiary: async (diaryData) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in for diary add");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated for diary add");
     const { date, ...restOfDiaryData } = diaryData;
     const diaryToInsert = {
       ...restOfDiaryData,
-      user_id: currentUser.id,
+      user_id: user.id,
       entry_date: date,
     };
     const { data: insertedSupabaseDiary, error } = await supabase
@@ -573,8 +565,8 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
   updateDiary: async (id, diaryUpdate) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in for diary update");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated for diary update");
     const { date, ...restOfUpdate } = diaryUpdate as any;
     const supabaseDiaryUpdate: any = { ...restOfUpdate };
     if (date !== undefined) {
@@ -584,7 +576,7 @@ export const useStore = create<StoreState>((set, get) => ({
       .from('diary_entries')
       .update(supabaseDiaryUpdate)
       .eq('id', id)
-      .eq('user_id', currentUser.id)
+      .eq('user_id', user.id)
       .select()
       .single();
     if (error) {
@@ -597,13 +589,13 @@ export const useStore = create<StoreState>((set, get) => ({
     }
   },
   deleteDiary: async (id) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in for diary delete");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated for diary delete");
     const { error } = await supabase
       .from('diary_entries')
       .delete()
       .eq('id', id)
-      .eq('user_id', currentUser.id);
+      .eq('user_id', user.id);
     if (error) {
       console.error('Error deleting diary:', error);
       throw error;
@@ -629,6 +621,7 @@ export const useStore = create<StoreState>((set, get) => ({
   fetchRoutineCompletionsForMonth: async (year, month) => {
     const user = get().user;
     if (!user) return;
+    const userId = user.id;
 
     const startDate = format(startOfMonth(new Date(year, month - 1)), 'yyyy-MM-dd');
     const endDate = format(endOfMonth(new Date(year, month - 1)), 'yyyy-MM-dd');
@@ -636,7 +629,7 @@ export const useStore = create<StoreState>((set, get) => ({
     const { data, error } = await supabase
       .from('routine_completions')
       .select('routine_id, completed_date, status')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .gte('completed_date', startDate)
       .lte('completed_date', endDate);
 
@@ -720,8 +713,8 @@ export const useStore = create<StoreState>((set, get) => ({
   },
 
   updateRoutineOrder: async (orderedRoutines) => {
-    const currentUser = get().user;
-    if (!currentUser) throw new Error("User not logged in");
+    const user = get().user;
+    if (!user) throw new Error("User not authenticated");
 
     const updates = orderedRoutines.map((routine, index) => ({
       id: routine.id,
@@ -732,7 +725,7 @@ export const useStore = create<StoreState>((set, get) => ({
       startTime: routine.startTime,
       endTime: routine.endTime,
       daysofweek: routine.daysofweek,
-      user_id: currentUser.id,
+      user_id: user.id,
       sort_order: index,
     }));
 
