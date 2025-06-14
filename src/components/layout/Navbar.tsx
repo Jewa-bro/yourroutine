@@ -37,11 +37,9 @@ const Navbar: React.FC = () => {
     <nav className="sticky top-0 z-40 w-full backdrop-blur flex-none transition-colors duration-500 lg:z-50 lg:border-b lg:border-gray-200 bg-white/95">
       <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="lg:hidden">
-            <Link to="/dashboard" className="text-xl font-bold text-primary-500">
-                루틴플로우
-            </Link>
-          </div>
+          {/* 모바일 버전에서는 빈 공간으로 대체 */}
+          <div className="lg:hidden w-8"></div>
+          
           {/* 아이콘 네비게이션 (중앙 정렬) */}
           <div className="hidden lg:flex flex-1 justify-center">
             <div className="flex items-center space-x-2 bg-gray-100 p-1 rounded-full">
