@@ -98,7 +98,7 @@ function App() {
   }, [user, routines, location.pathname, navigate, isClient]);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 antialiased overscroll-y-contain">
       <TodoFormModal />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
