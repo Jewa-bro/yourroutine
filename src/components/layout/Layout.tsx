@@ -32,7 +32,7 @@ const Layout: React.FC = () => {
 
   const onDragEnd = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
     const { offset, velocity } = info;
-    const swipeThreshold = 50; // A bit more forgiving
+    const swipeThreshold = 50;
     const swipePower = Math.abs(offset.x) * velocity.x;
 
     if (swipePower < -swipeThreshold) { // Swipe Left
@@ -51,32 +51,36 @@ const Layout: React.FC = () => {
   const isSwipeablePage = pages.includes(location.pathname);
 
   return (
-    <div className="h-screen w-screen flex flex-col overflow-hidden">
+    <div className="h-screen w-screen flex flex-col overflow-hidden bg-gray-50">
       <Navbar />
       
-      <AnimatePresence initial={false} custom={direction}>
-        <motion.main
-          key={location.pathname}
-          className="flex-1 w-full max-w-screen-xl mx-auto overflow-y-auto pb-24 lg:pb-6"
-          custom={direction}
-          variants={variants}
-          initial="enter"
-          animate="center"
-          exit="exit"
-          transition={{
-            x: { type: 'spring', stiffness: 300, damping: 30 },
-            opacity: { duration: 0.2 },
-          }}
-          drag={isSwipeablePage ? 'x' : false}
-          dragConstraints={{ left: 0, right: 0 }}
-          dragElastic={0.1}
-          onDragEnd={onDragEnd}
-        >
-          <div className="px-4 sm:px-6 lg:px-8 py-6">
-            <Outlet />
-          </div>
-        </motion.main>
-      </AnimatePresence>
+      <div className="flex-1 relative flex flex-col">
+        <AnimatePresence initial={false} custom={direction}>
+          <motion.div
+            key={location.pathname}
+            className="absolute top-0 left-0 w-full h-full"
+            custom={direction}
+            variants={variants}
+            initial="enter"
+            animate="center"
+            exit="exit"
+            transition={{
+              x: { type: 'spring', stiffness: 300, damping: 30 },
+              opacity: { duration: 0.2 },
+            }}
+            drag={isSwipeablePage ? 'x' : false}
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.1}
+            onDragEnd={onDragEnd}
+          >
+            <main className="h-full overflow-y-auto">
+              <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
+                <Outlet />
+              </div>
+            </main>
+          </motion.div>
+        </AnimatePresence>
+      </div>
       
       <BottomNavbar />
     </div>
