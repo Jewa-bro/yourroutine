@@ -33,6 +33,7 @@ const Layout: React.FC<LayoutProps> = ({ handleSignOut }) => {
   };
   
   const isSwipeablePage = pages.includes(location.pathname);
+  const isCalendarPage = location.pathname === '/calendar';
 
   return (
     <div className="h-screen w-screen flex flex-col overflow-hidden">
@@ -50,7 +51,12 @@ const Layout: React.FC<LayoutProps> = ({ handleSignOut }) => {
         exit={{ opacity: 0 }}
         transition={{ duration: 0.2 }}
       >
-        <div className="max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28">
+        <div 
+          className={`h-full ${isCalendarPage 
+            ? 'p-0' 
+            : 'max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28'}`
+          }
+        >
             <Outlet />
         </div>
       </motion.main>

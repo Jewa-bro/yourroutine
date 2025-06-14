@@ -151,7 +151,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
         <div className="flex items-center">
           <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
           {!isOutside && hasDiary && <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full ml-1.5"></div>}
-          {!isOutside && flameIconContent && <span className="ml-auto" style={{ ...flameIconStyle }}>{flameIconContent}</span>}
+          {!isOutside && flameIconContent && <span className="ml-auto text-sm" style={{ ...flameIconStyle }}>{flameIconContent}</span>}
         </div>
         <div className="flex-grow space-y-1 mt-1 text-xs">
           {visibleTodos.map(todo => (
@@ -191,21 +191,21 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
   };
 
   const defaultCalendarClasses = {
-    root: 'bg-white rounded-lg shadow-md w-full h-full flex flex-col',
+    root: 'bg-white w-full h-full flex flex-col border-t',
     months: 'w-full h-full flex flex-col',
-    month: 'w-full h-full flex flex-col',
+    month: 'w-full h-full flex flex-col flex-grow',
     caption: 'flex justify-center relative items-center py-4 px-2 border-b',
     caption_label: 'font-semibold text-gray-800 text-lg sm:text-xl',
     nav: 'space-x-1 sm:space-x-1.5 flex items-center',
     nav_button: 'bg-transparent rounded-full flex items-center justify-center hover:bg-gray-100 h-8 w-8 sm:h-9 sm:w-9',
     nav_button_previous: 'absolute left-2',
     nav_button_next: 'absolute right-2',
-    table: 'w-full border-collapse table-fixed flex-grow flex flex-col',
+    table: 'w-full border-collapse flex-grow flex flex-col',
     head_row: 'flex font-medium text-gray-500',
-    head_cell: 'flex-1 text-center p-2',
+    head_cell: 'flex-1 text-center p-2 border-b',
     body: 'flex-grow flex flex-col',
     row: 'flex w-full flex-grow',
-    cell: 'flex-1 relative text-center p-0 border-r border-t border-gray-200 first:border-l',
+    cell: 'flex-1 relative text-center p-0 border-r border-b first:border-l-0 last:border-r-0',
     day: 'w-full h-full hover:bg-gray-50',
     day_selected: 'bg-primary-100 hover:bg-primary-100 font-semibold',
     day_today: 'bg-primary-50',
