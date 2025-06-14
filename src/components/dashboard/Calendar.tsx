@@ -6,8 +6,9 @@ import { DayPicker, type DayProps } from 'react-day-picker';
 import 'react-day-picker/dist/style.css';
 import { useStore } from '../../store/useStore';
 import { useNavigate } from 'react-router-dom';
+import { Routine } from '../../types';
 
-// Marquee 컴포넌트: 긴 텍스트를 스크롤 효과로 보여줍니다.
+// Marquee 컴포넌트 (긴 텍스트 스크롤)
 const MarqueeText: React.FC<{ text: string }> = ({ text }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
@@ -28,7 +29,11 @@ const MarqueeText: React.FC<{ text: string }> = ({ text }) => {
   );
 };
 
-const Calendar: React.FC = () => {
+interface CalendarProps {
+  variant?: 'default' | 'small';
+}
+
+const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
   const {
     currentDate,
     setCurrentDate,
@@ -40,6 +45,7 @@ const Calendar: React.FC = () => {
   } = useStore();
   
   const navigate = useNavigate();
+  const isSmall = variant === 'small';
   const [displayedMonthDate, setDisplayedMonthDate] = useState(currentDate);
 
   useEffect(() => {
@@ -48,7 +54,7 @@ const Calendar: React.FC = () => {
 
   useEffect(() => {
     if (!isSameMonth(currentDate, displayedMonthDate) || !isSameYear(currentDate, displayedMonthDate)) {
-        setDisplayedMonthDate(currentDate);
+      setDisplayedMonthDate(currentDate);
     }
   }, [currentDate]);
 
@@ -61,70 +67,130 @@ const Calendar: React.FC = () => {
     if (!isSameMonth(date, displayedMonthDate) || !isSameYear(date, displayedMonthDate)) {
       setDisplayedMonthDate(date);
     }
-    // 모바일에서는 상세 패널이 없으므로, 날짜 클릭 시 대시보드로 이동하여 상세 내용을 보여주는 것도 고려해볼 수 있습니다.
-    if (window.innerWidth < 1024) {
-      navigate('/dashboard');
+    if (isSmall) {
+      // 작은 달력에서는 특별한 동작 없음
+    } else if (window.innerWidth < 1024) {
+      navigate('/dashboard'); // 큰 달력을 모바일에서 볼 때, 날짜 누르면 대시보드로 이동
     }
+  };
+
+  const getRoutineCompletionStatusForDate = (date: Date): 'ALL_COMPLETE' | 'SOME_INCOMPLETE' | 'NO_ROUTINES' => {
+    const dayOfWeek = getDay(date);
+    const dateStr = format(date, 'yyyy-MM-dd');
+    const routinesForDayOfWeek = routines.filter(routine => 
+      routine.daysofweek.includes(dayOfWeek) && !isBefore(date, startOfDay(new Date(routine.created_at)))
+    );
+    if (routinesForDayOfWeek.length === 0) return 'NO_ROUTINES';
+    for (const routine of routinesForDayOfWeek) {
+      if (routineInstances[routine.id]?.[dateStr] !== 'completed') return 'SOME_INCOMPLETE';
+    }
+    return 'ALL_COMPLETE';
   };
 
   function DayContent(props: DayProps) { 
     const { date, displayMonth } = props;
+    const todosForDay = todos.filter(t => t.dueDate && isSameDay(date, new Date(t.dueDate)));
+    const hasDiary = diaries.some(d => isSameDay(date, new Date(d.date)));
+    
+    // 루틴 완료 상태 (불꽃 아이콘)
+    let flameIconContent: string | null = null;
+    let flameIconStyle: React.CSSProperties = {};
+    if (!isBefore(date, startOfDay(new Date(routines[0]?.created_at || new Date())))) {
+      const completionStatus = getRoutineCompletionStatusForDate(date);
+      if (completionStatus === 'ALL_COMPLETE') {
+        flameIconContent = '🔥';
+      } else if (completionStatus === 'SOME_INCOMPLETE') {
+        flameIconContent = '🔥';
+        flameIconStyle = { filter: 'grayscale(1)', opacity: 0.5 };
+      }
+    }
+
     const dayOfMonth = format(date, 'd');
-    
-    // 데이터 필터링
-    const todosForDay = todos.filter(todo => todo.dueDate && isSameDay(date, new Date(todo.dueDate)));
-    const hasDiary = diaries.some(diary => isSameDay(date, new Date(diary.date)));
-    const dayOfWeek = getDay(date);
-    const routinesForDay = routines.filter(r => r.daysofweek?.includes(dayOfWeek) && isSameDay(r.created_at, date) || isBefore(new Date(r.created_at!), date));
+    const dayNumberClassesList: string[] = [];
+    const isOutside = !isSameMonth(date, displayMonth);
 
-    const allEvents = [
-      ...routinesForDay.map(r => ({ id: `r-${r.id}`, content: r.name, completed: routineInstances[r.id]?.[format(date, 'yyyy-MM-dd')] === 'completed', type: 'routine' as const })),
-      ...todosForDay.map(t => ({ id: `t-${t.id}`, content: t.content, completed: t.completed, type: 'todo' as const }))
-    ];
-    
-    const dayNumberClassesList: string[] = ['font-medium mb-1'];
-    const currentDayOfWeek = date.getDay();
-    const isOutsideCurrentMonth = !isSameMonth(date, displayMonth);
+    if(isSmall) {
+      dayNumberClassesList.push('absolute top-1 left-1 text-xs sm:text-sm');
+    } else {
+      dayNumberClassesList.push('font-medium mb-1');
+    }
 
-    if (isOutsideCurrentMonth) {
+    if (isOutside) {
       dayNumberClassesList.push('text-gray-400/80');
-    } else if (currentDayOfWeek === 6) { // 토요일
+    } else if (date.getDay() === 6) {
       dayNumberClassesList.push('text-blue-600');
-    } else if (currentDayOfWeek === 0) { // 일요일
+    } else if (date.getDay() === 0) {
       dayNumberClassesList.push('text-red-600');
     }
     
-    const maxVisibleEvents = 4; // 셀 당 보여줄 최대 이벤트 수
-    const visibleEvents = allEvents.slice(0, maxVisibleEvents);
-    const hiddenEventsCount = allEvents.length - maxVisibleEvents;
+    // 작은 달력 (대시보드) 뷰
+    if (isSmall) {
+      return (
+        <>
+          <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
+          {!isOutside && flameIconContent && (
+            <span className="absolute top-0 right-0" style={{ fontSize: '12px', ...flameIconStyle }}>
+              {flameIconContent}
+            </span>
+          )}
+          <div className="absolute bottom-1 left-1/2 -translate-x-1/2 flex space-x-1">
+            {!isOutside && todosForDay.length > 0 && <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>}
+            {!isOutside && hasDiary && <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>}
+          </div>
+        </>
+      );
+    }
+
+    // 큰 달력 (캘린더 페이지) 뷰
+    const maxVisibleEvents = 3;
+    const visibleTodos = todosForDay.slice(0, maxVisibleEvents);
+    const hiddenTodosCount = todosForDay.length - maxVisibleEvents;
 
     return (
       <div className="flex flex-col h-full p-1.5 overflow-hidden">
         <div className="flex items-center">
           <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
-          {hasDiary && !isOutsideCurrentMonth && <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full ml-1.5"></div>}
+          {!isOutside && hasDiary && <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full ml-1.5"></div>}
+          {!isOutside && flameIconContent && <span className="ml-auto" style={{ ...flameIconStyle }}>{flameIconContent}</span>}
         </div>
         <div className="flex-grow space-y-1 mt-1 text-xs">
-          {visibleEvents.map(event => (
-            <div
-              key={event.id}
-              title={event.content}
-              className={`p-1 rounded-md text-left text-white ${event.completed ? 'bg-green-500' : (event.type === 'routine' ? 'bg-indigo-500' : 'bg-sky-500')}`}
-            >
-              <MarqueeText text={event.content} />
+          {visibleTodos.map(todo => (
+            <div key={todo.id} title={todo.content} className={`p-1 rounded-md text-left text-white ${todo.completed ? 'bg-green-500' : 'bg-sky-500'}`}>
+              <MarqueeText text={todo.content} />
             </div>
           ))}
-          {hiddenEventsCount > 0 && (
-             <div className="text-gray-500 text-center text-[10px] pt-1">
-               + {hiddenEventsCount} more
-             </div>
+          {hiddenTodosCount > 0 && (
+             <div className="text-gray-500 text-center text-[10px] pt-1">+ {hiddenTodosCount} more</div>
           )}
         </div>
       </div>
     );
   }
   
-  const calendarClassNames = {
+  // 캘린더 스타일 동적 할당
+  const smallCalendarClasses = {
+    root: 'bg-white rounded-lg shadow-md w-full text-xs',
+    months: 'w-full',
+    month: 'w-full p-2.5 sm:p-3',
+    caption: 'flex justify-center relative items-center py-3 mb-2.5 sm:mb-3',
+    caption_label: 'font-semibold text-gray-800 text-base sm:text-lg',
+    nav: 'space-x-1 sm:space-x-1.5 flex items-center',
+    nav_button: 'bg-transparent rounded-full flex items-center justify-center hover:bg-gray-100 h-7 w-7 sm:h-8 sm:w-8',
+    nav_button_previous: 'absolute left-2.5',
+    nav_button_next: 'absolute right-2.5',
+    table: 'w-full border-collapse table-fixed',
+    head_row: 'flex font-medium text-gray-500 text-xs sm:text-sm',
+    head_cell: 'flex-1 text-center p-1.5 sm:p-2',
+    row: 'flex w-full mt-2.5 sm:mt-3',
+    cell: 'flex-1 relative text-center p-0',
+    day: 'w-full aspect-square rounded-lg hover:bg-gray-100 aria-selected:bg-primary-100 font-medium relative text-xs',
+    day_selected: 'bg-primary-500 text-white hover:bg-primary-600 font-semibold',
+    day_today: 'font-bold ring-1 ring-offset-0 ring-primary-300',
+    day_disabled: 'text-gray-300 opacity-50',
+    day_hidden: 'invisible',
+  };
+
+  const defaultCalendarClasses = {
     root: 'bg-white rounded-lg shadow-md w-full h-full flex flex-col',
     months: 'w-full h-full flex flex-col',
     month: 'w-full h-full flex flex-col',
@@ -148,7 +214,7 @@ const Calendar: React.FC = () => {
   };
 
   return (
-    <div className="h-full">
+    <div className={`w-full ${isSmall ? 'max-w-xs mx-auto' : 'h-full'}`}>
       <DayPicker
         mode="single"
         selected={currentDate}
@@ -158,7 +224,7 @@ const Calendar: React.FC = () => {
         locale={ko}
         showOutsideDays
         fixedWeeks
-        classNames={calendarClassNames}
+        classNames={isSmall ? smallCalendarClasses : defaultCalendarClasses}
         components={{ DayContent }}
       />
     </div>
