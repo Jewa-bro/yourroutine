@@ -153,8 +153,8 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     const hiddenEventsCount = eventsForDay.length - maxVisibleEvents;
 
     return (
-      <div className="flex flex-col h-full p-1.5 overflow-hidden">
-        <div className="flex items-center">
+      <div className="flex flex-col h-full py-1.5 overflow-hidden">
+        <div className="flex items-center px-1.5">
           <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
           {!isOutside && flameIconContent && <span className="ml-auto text-sm" style={{ ...flameIconStyle }}>{flameIconContent}</span>}
         </div>
