@@ -1,17 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore';
-import { UserCircle, Edit3, KeyRound, LogOut } from 'lucide-react';
+import { User, Mail, Calendar, Edit, Shield, LogOut } from 'lucide-react';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import PasswordChangeModal from '../components/profile/PasswordChangeModal';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
+import { format } from 'date-fns';
+import { ko } from 'date-fns/locale';
 
 const ProfilePage: React.FC = () => {
   const { user, setUser } = useStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
+
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      // 사용자 메타데이터 또는 이메일에서 이름 설정
+      setName(user.user_metadata?.name || user.email?.split('@')[0] || '사용자');
+      setEmail(user.email || '');
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -21,28 +34,7 @@ const ProfilePage: React.FC = () => {
     );
   }
 
-  const displayName = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || '사용자';
-  const avatarUrl = user.user_metadata?.avatar_url;
-  const bio = user.user_metadata?.bio;
-  
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return '정보 없음';
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) {
-        console.warn('Invalid date string for user.created_at:', dateString);
-        return '날짜 정보 없음'; 
-      }
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } catch (error) {
-      console.error('Error formatting date:', error);
-      return '날짜 형식 오류';
-    }
-  };
+  const registrationDate = user.created_at ? format(new Date(user.created_at), 'yyyy년 M월 d일', { locale: ko }) : '알 수 없음';
 
   const handleEditProfile = () => {
     setIsEditModalOpen(true);
@@ -78,18 +70,18 @@ const ProfilePage: React.FC = () => {
         <div className="h-32 bg-gradient-to-r from-primary-500 to-secondary-500"></div>
         <div className="px-6 py-4 -mt-16">
           <div className="flex items-end space-x-5">
-            {avatarUrl ? (
+            {user.user_metadata?.avatar_url ? (
               <img
-                src={`${avatarUrl}?t=${new Date().getTime()}`}
+                src={`${user.user_metadata?.avatar_url}?t=${new Date().getTime()}`}
                 alt="프로필 사진"
                 className="w-32 h-32 rounded-full object-cover ring-4 ring-white shadow-lg"
               />
             ) : (
-              <UserCircle size={128} className="text-slate-400 bg-white rounded-full p-2 ring-4 ring-white shadow-lg" />
+              <User size={128} className="text-slate-400 bg-white rounded-full p-2 ring-4 ring-white shadow-lg" />
             )}
             <div className="pb-3">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">{displayName}</h1>
-              {user.email && <p className="text-sm text-slate-500 mt-1">{user.email}</p>}
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">{name}</h1>
+              {email && <p className="text-sm text-slate-500 mt-1">{email}</p>}
             </div>
           </div>
         </div>
@@ -100,22 +92,16 @@ const ProfilePage: React.FC = () => {
             <dl className="-my-3 divide-y divide-slate-200 text-sm">
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-slate-500">이름</dt>
-                <dd className="text-slate-700 sm:col-span-2">{displayName}</dd>
+                <dd className="text-slate-700 sm:col-span-2">{name}</dd>
               </div>
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-slate-500">이메일 (로그인 ID)</dt>
-                <dd className="text-slate-700 sm:col-span-2">{user.email}</dd>
+                <dd className="text-slate-700 sm:col-span-2">{email}</dd>
               </div>
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-slate-500">가입일</dt>
-                <dd className="text-slate-700 sm:col-span-2">{formatDate(user.created_at)}</dd>
+                <dd className="text-slate-700 sm:col-span-2">{registrationDate}</dd>
               </div>
-              {bio && (
-                <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
-                  <dt className="font-medium text-slate-500">자기소개</dt>
-                  <dd className="text-slate-700 sm:col-span-2 whitespace-pre-wrap">{bio}</dd>
-                </div>
-              )}
             </dl>
           </div>
         </div>
@@ -140,7 +126,7 @@ const ProfilePage: React.FC = () => {
             type="button"
             className="btn-secondary flex items-center justify-center space-x-2"
           >
-            <Edit3 size={18} />
+            <Edit size={18} />
             <span>프로필 수정</span>
           </button>
           <button 
@@ -148,7 +134,7 @@ const ProfilePage: React.FC = () => {
             type="button"
             className="btn-outline flex items-center justify-center space-x-2"
           >
-            <KeyRound size={18} />
+            <Shield size={18} />
             <span>비밀번호 변경</span>
           </button>
           <button 
