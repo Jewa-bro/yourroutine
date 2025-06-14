@@ -21,6 +21,7 @@ interface StoreState {
   
   // 로그인/로그아웃 액션 (추가)
   setUser: (user: User | null) => void;
+  fetchAndSetUser: (supabaseUser: any) => Promise<void>;
   fetchInitialData: () => Promise<void>;
   updateUserProfile: (userId: string, profileData: Partial<UserMetadata>) => Promise<void>;
   changePassword: (userId: string, newPassword: string) => Promise<void>;
@@ -108,12 +109,68 @@ export const useStore = create<StoreState>((set, get) => ({
   editingTodo: null,
   
   setUser: (user) => {
-    set({ 
-      user,
-      initialDataFetched: !user, // 사용자가 있으면 데이터 다시 불러와야 함
-    });
-    if (!user) {
-      set({ routines: [], todos: [], diaries: [], routineInstances: {} });
+    set({ user });
+    if (user) {
+      localStorage.setItem('loggedInUser', JSON.stringify({
+        id: user.id,
+        email: user.email,
+        name: user.user_metadata?.full_name || user.user_metadata?.name,
+        avatar_url: user.user_metadata?.avatar_url,
+      }));
+      // 사용자가 설정되면 초기 데이터 로드 트리거
+      get().fetchInitialData();
+    } else {
+      // 로그아웃 시 관련 데이터 초기화
+      localStorage.removeItem('loggedInUser');
+      set({ 
+        routines: [], 
+        todos: [], 
+        diaries: [], 
+        routineInstances: {},
+        initialDataFetched: false,
+      });
+    }
+  },
+
+  fetchAndSetUser: async (supabaseUser) => {
+    if (!supabaseUser) {
+      get().setUser(null);
+      return;
+    }
+
+    try {
+      const { data: profile, error } = await supabase
+        .from('custom_users')
+        .select('username, full_name, avatar_url, bio')
+        .eq('id', supabaseUser.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching user profile:", error);
+        // 프로필이 없어도 기본 auth 정보로 사용자 설정
+        get().setUser(mapSupabaseAuthUserToLocalUser(supabaseUser));
+        return;
+      }
+
+      const fullUser: User = {
+        id: supabaseUser.id,
+        email: supabaseUser.email,
+        created_at: supabaseUser.created_at,
+        user_metadata: {
+          name: profile.username, // Supabase DB의 username을 기본 이름으로 사용
+          full_name: profile.full_name,
+          avatar_url: profile.avatar_url,
+          bio: profile.bio,
+          ...supabaseUser.user_metadata, // 다른 메타데이터도 유지
+        },
+      };
+
+      get().setUser(fullUser);
+
+    } catch (e) {
+      console.error("Exception in fetchAndSetUser:", e);
+      // 예외 발생 시에도 기본 auth 정보로 사용자 설정
+      get().setUser(mapSupabaseAuthUserToLocalUser(supabaseUser));
     }
   },
 
@@ -198,7 +255,7 @@ export const useStore = create<StoreState>((set, get) => ({
     if (refreshedUser) {
       const updatedUser: User = {
         id: refreshedUser.id,
-        email: refreshedUser.username,
+        email: currentUser.email, // 버그 수정: 기존 이메일 정보를 유지
         user_metadata: {
           name: refreshedUser.username, 
           full_name: refreshedUser.full_name,

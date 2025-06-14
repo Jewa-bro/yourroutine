@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { User, Mail, Calendar, Edit, Shield, LogOut } from 'lucide-react';
@@ -15,17 +15,6 @@ const ProfilePage: React.FC = () => {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const navigate = useNavigate();
 
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-
-  useEffect(() => {
-    if (user) {
-      // 사용자 메타데이터 또는 이메일에서 이름 설정
-      setName(user.user_metadata?.name || user.email?.split('@')[0] || '사용자');
-      setEmail(user.email || '');
-    }
-  }, [user]);
-
   if (!user) {
     return (
       <div className="flex items-center justify-center h-full text-slate-600">
@@ -33,6 +22,11 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
+
+  // 스토어의 user 객체에서 직접 값을 사용
+  const displayName = user.user_metadata?.full_name || user.user_metadata?.name || '사용자';
+  const email = user.email || '';
+  const avatarUrl = user.user_metadata?.avatar_url;
 
   const registrationDate = user.created_at ? format(new Date(user.created_at), 'yyyy년 M월 d일', { locale: ko }) : '알 수 없음';
 
@@ -70,9 +64,9 @@ const ProfilePage: React.FC = () => {
         <div className="h-32 bg-gradient-to-r from-primary-500 to-secondary-500"></div>
         <div className="px-6 py-4 -mt-16">
           <div className="flex items-end space-x-5">
-            {user.user_metadata?.avatar_url ? (
+            {avatarUrl ? (
               <img
-                src={`${user.user_metadata?.avatar_url}?t=${new Date().getTime()}`}
+                src={`${avatarUrl}?t=${new Date().getTime()}`}
                 alt="프로필 사진"
                 className="w-32 h-32 rounded-full object-cover ring-4 ring-white shadow-lg"
               />
@@ -80,7 +74,7 @@ const ProfilePage: React.FC = () => {
               <User size={128} className="text-slate-400 bg-white rounded-full p-2 ring-4 ring-white shadow-lg" />
             )}
             <div className="pb-3">
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">{name}</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-slate-800">{displayName}</h1>
               {email && <p className="text-sm text-slate-500 mt-1">{email}</p>}
             </div>
           </div>
@@ -92,7 +86,7 @@ const ProfilePage: React.FC = () => {
             <dl className="-my-3 divide-y divide-slate-200 text-sm">
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-slate-500">이름</dt>
-                <dd className="text-slate-700 sm:col-span-2">{name}</dd>
+                <dd className="text-slate-700 sm:col-span-2">{displayName}</dd>
               </div>
               <div className="grid grid-cols-1 gap-1 py-3 sm:grid-cols-3 sm:gap-4">
                 <dt className="font-medium text-slate-500">이메일 (로그인 ID)</dt>

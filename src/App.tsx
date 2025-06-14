@@ -20,7 +20,7 @@ import { format, startOfDay } from 'date-fns';
 import { supabase } from './lib/supabaseClient';
 
 function App() {
-  const { user, setUser, fetchInitialData } = useStore();
+  const { fetchAndSetUser } = useStore();
   const [isAuthReady, setAuthReady] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -30,8 +30,7 @@ function App() {
     const checkUserSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        setUser(session.user); // Zustand 스토어에 사용자 정보 저장
-        await fetchInitialData(); // 사용자 관련 모든 데이터 불러오기
+        await fetchAndSetUser(session.user); // Zustand 스토어에 사용자 및 프로필 정보 저장
       }
       setAuthReady(true); // 인증 상태 준비 완료
     };
@@ -41,9 +40,8 @@ function App() {
     // 2. 인증 상태 변경 감지 (로그인/로그아웃)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (_event, session) => {
-        setUser(session?.user ?? null); // 로그인/로그아웃 시 스토어 업데이트
+        fetchAndSetUser(session?.user ?? null); // 로그인/로그아웃 시 스토어 업데이트
         if (_event === 'SIGNED_IN') {
-          fetchInitialData();
           navigate('/dashboard');
         }
         if (_event === 'SIGNED_OUT') {
@@ -54,7 +52,7 @@ function App() {
 
     // 3. 컴포넌트 언마운트 시 구독 해제
     return () => subscription.unsubscribe();
-  }, [setUser, fetchInitialData, navigate]);
+  }, [fetchAndSetUser, navigate]);
 
   // isClient 로직은 그대로 유지
   const [isClient, setIsClient] = useState(false);
