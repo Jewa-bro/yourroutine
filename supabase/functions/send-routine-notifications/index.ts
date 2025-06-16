@@ -26,8 +26,7 @@ serve(async (req) => {
         user_id,
         daysofweek,
         startTime
-      `)
-      .eq('is_active', true);
+      `);
 
     if (routinesError) throw routinesError;
 
