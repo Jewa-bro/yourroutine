@@ -41,7 +41,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, date, variant = 'man
     opacity: isDragging ? 0.7 : 1,
     zIndex: isDragging ? 10 : 'auto',
   };
-  
+
   const getRepeatDays = () => {
     if (!routine.daysofweek || routine.daysofweek.length === 0) return '요일 미설정';
     if (routine.daysofweek.length === 7) return '매일';
@@ -105,11 +105,11 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, date, variant = 'man
 
   return (
     <div ref={setNodeRef} style={style}>
-      <motion.div
+    <motion.div
         className="flex items-center bg-white p-4 rounded-lg shadow-sm transition-shadow duration-200 hover:shadow-md cursor-pointer"
         onClick={handleCardClick}
         layout
-      >
+        >
         {variant === 'management' && (
           <div {...attributes} {...listeners} className="p-2 cursor-grab text-gray-400 touch-none">
             <GripVertical size={20} />
@@ -129,7 +129,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, date, variant = 'man
             </div>
             <div className="flex items-center text-gray-600">
               <Repeat size={14} className="mr-1.5 text-gray-400" />
-              <span>{getRepeatDays()}</span>
+            <span>{getRepeatDays()}</span>
             </div>
           </div>
         </div>
@@ -147,7 +147,7 @@ const RoutineCard: React.FC<RoutineCardProps> = ({ routine, date, variant = 'man
           )}
         </div>
       </motion.div>
-    </div>
+      </div>
   );
 };
 

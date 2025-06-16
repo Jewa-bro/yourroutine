@@ -39,6 +39,12 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Supabase API 호출은 캐시하지 않고 바로 네트워크로 요청합니다.
+  if (event.request.url.includes('supabase.co')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
@@ -53,5 +59,39 @@ self.addEventListener('fetch', (event) => {
           console.error('[Service Worker] Fetch error:', error);
         });
       })
+  );
+});
+
+self.addEventListener('push', function(event) {
+  const data = event.data.json();
+  const title = data.title;
+  const options = {
+    body: data.body,
+    icon: './icons/icon-192x192.png', // 앱 아이콘 경로
+    badge: './icons/badge-72x72.png', // 작은 뱃지 아이콘 경로
+    data: {
+        url: data.url || '/'
+    }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      if (clientList.length > 0) {
+        let client = clientList[0];
+        for (let i = 0; i < clientList.length; i++) {
+          if (clientList[i].focused) {
+            client = clientList[i];
+          }
+        }
+        return client.focus();
+      }
+      return clients.openWindow(event.notification.data.url);
+    })
   );
 }); 

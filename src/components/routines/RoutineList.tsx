@@ -12,7 +12,7 @@ const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
 const RoutineList: React.FC = () => {
   const originalRoutines = useStore((state) => state.routines);
   const updateRoutineOrder = useStore((state) => state.updateRoutineOrder);
-  
+
   const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [filteredRoutines, setFilteredRoutines] = useState<Routine[]>([]);
   const [activeRoutine, setActiveRoutine] = useState<Routine | null>(null);
@@ -39,7 +39,7 @@ const RoutineList: React.FC = () => {
       setActiveRoutine(routine);
     }
   };
-
+  
   const handleDragEnd = async (event: DragEndEvent) => {
     setActiveRoutine(null);
     const { active, over } = event;
@@ -88,7 +88,7 @@ const RoutineList: React.FC = () => {
     <div className="mb-8">
       <div className="mb-6 flex justify-center space-x-2 md:space-x-3">
         {dayNames.map((day, index) => (
-          <button
+        <button
             key={index}
             onClick={() => setSelectedDay(index)}
             className={`w-12 h-12 rounded-full font-semibold transition-all text-base transform hover:scale-105 ${
@@ -98,7 +98,7 @@ const RoutineList: React.FC = () => {
             }`}
           >
             {day}
-          </button>
+        </button>
         ))}
       </div>
 
@@ -110,16 +110,16 @@ const RoutineList: React.FC = () => {
           onDragEnd={handleDragEnd}
         >
           <SortableContext items={filteredRoutines.map(r => r.id)} strategy={verticalListSortingStrategy}>
-            <motion.div
+          <motion.div
               className="space-y-4"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ staggerChildren: 0.05 }}
-            >
+          >
               {filteredRoutines.map(routine => (
                 <RoutineCard key={routine.id} routine={routine} date={todayStr} variant="management" />
-              ))}
-            </motion.div>
+            ))}
+          </motion.div>
           </SortableContext>
           <DragOverlay>
             {activeRoutine ? <RoutineCard routine={activeRoutine} date={todayStr} variant="management" /> : null}

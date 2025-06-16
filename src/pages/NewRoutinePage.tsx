@@ -79,11 +79,26 @@ const NewRoutinePage: React.FC = () => {
       const routineToEdit = routines.find(r => r.id === routineId);
       if (routineToEdit) {
         const hasTime = !!routineToEdit.startTime;
+        
+        const formatTimeForInput = (timeStr: string | null | undefined) => {
+          if (!timeStr) return '';
+          // ISO 형식인지 확인
+          if (timeStr.includes('T')) {
+            const date = new Date(timeStr);
+            if (isNaN(date.getTime())) return '';
+            const h = date.getHours().toString().padStart(2,'0');
+            const m = date.getMinutes().toString().padStart(2,'0');
+            return `${h}:${m}`;
+          }
+          // PG time "HH:MM" 또는 "HH:MM:SS"
+          return timeStr.slice(0,5);
+        };
+
         setFormData({
-          ...initialFormData, // 기본값으로 시작
+          ...initialFormData,
           ...routineToEdit,
-          startTime: routineToEdit.startTime || '',
-          endTime: routineToEdit.endTime || '',
+          startTime: formatTimeForInput(routineToEdit.startTime),
+          endTime: formatTimeForInput(routineToEdit.endTime),
           isDaily: (routineToEdit.daysofweek || []).length === 7,
           triggerType: hasTime ? 'time' : 'condition',
         });
@@ -122,7 +137,7 @@ const NewRoutinePage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    
     if (formData.daysofweek.length === 0) {
       alert('요일을 하나 이상 선택해주세요.');
       return;
@@ -141,17 +156,24 @@ const NewRoutinePage: React.FC = () => {
       endTime: null,
     };
 
+    // 입력으로 받은 "HH:MM" 형식을 PG time 타입이 허용하는 "HH:MM:SS" 로 변환
+    const toPgTime = (timeString: string | undefined | null) => {
+      if (!timeString) return null;
+      const [hours, minutes] = timeString.split(':');
+      if (hours === undefined || minutes === undefined) return null;
+      return `${hours.padStart(2,'0')}:${minutes.padStart(2,'0')}:00`;
+    };
+
     if (triggerType === 'time') {
       dataToSubmit.trigger = undefined;
-      // 빈 문자열일 경우 null로, 아니면 그대로 할당
-      dataToSubmit.startTime = routineData.startTime ? routineData.startTime : null;
-      dataToSubmit.endTime = routineData.endTime ? routineData.endTime : null;
+      dataToSubmit.startTime = toPgTime(routineData.startTime);
+      dataToSubmit.endTime = toPgTime(routineData.endTime);
     } else {
       dataToSubmit.trigger = routineData.trigger;
       dataToSubmit.startTime = undefined;
       dataToSubmit.endTime = undefined;
     }
-
+    
     try {
       if (isEditMode && routineId) {
         await updateRoutine(routineId, dataToSubmit);
@@ -239,13 +261,13 @@ const NewRoutinePage: React.FC = () => {
 
             <div className="flex-1">
               <label htmlFor="name" className="sr-only">루틴 이름</label>
-              <input
+            <input
                 id="name"
                 name="name"
-                type="text"
-                required
+              type="text"
+              required
                 className="form-input text-xl font-semibold"
-                value={formData.name}
+              value={formData.name}
                 onChange={handleInputChange}
                 placeholder="루틴 이름 (예: 아침 스트레칭)"
               />
@@ -256,7 +278,7 @@ const NewRoutinePage: React.FC = () => {
                 value={formData.description || ''}
                 onChange={handleInputChange}
                 placeholder="설명 (선택사항)"
-              />
+            />
             </div>
           </div>
           
@@ -328,16 +350,16 @@ const NewRoutinePage: React.FC = () => {
                 </div>
                 <div className="flex items-center space-x-4">
                   <label htmlFor="endTime" className="w-20 text-sm font-medium">종료 시간</label>
-                  <input
+              <input
                     id="endTime"
-                    type="time"
+                type="time"
                     name="endTime"
-                    className="form-input"
+                className="form-input"
                     value={formData.endTime || ''}
                     onChange={handleInputChange}
                     disabled={formData.triggerType !== 'time'}
-                  />
-                </div>
+              />
+            </div>
               </div>
             </motion.div>
           )}
@@ -406,15 +428,15 @@ const NewRoutinePage: React.FC = () => {
           {/* 제출 버튼 */}
           <div className="pt-6 border-t flex justify-between items-center">
             {/* 삭제 버튼 (수정 모드에서만) */}
-            <div>
+          <div>
               {isEditMode && (
                 <Button type="button" onClick={handleDelete} variant="danger">
                   <Trash2 className="mr-2 h-4 w-4" />
                   삭제하기
                 </Button>
               )}
-            </div>
-            
+          </div>
+          
             {/* 취소 및 저장 버튼 */}
             <div className="flex items-center space-x-4">
               <Button type="button" onClick={() => navigate('/routines')} variant="outline">

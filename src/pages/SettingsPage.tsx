@@ -2,9 +2,26 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore';
 import { Bell, Moon, Sun, Globe } from 'lucide-react';
+import { requestNotificationPermission } from '../utils/notification';
 
 const SettingsPage: React.FC = () => {
   const { settings, updateSettings } = useStore();
+
+  const handleNotificationToggle = async () => {
+    // 알림을 켜려는 경우
+    if (!settings.notifications) {
+      const permissionGranted = await requestNotificationPermission();
+      if (permissionGranted) {
+        updateSettings({ notifications: true });
+      } else {
+        // 사용자가 권한을 거부하면 토글을 다시 끄고, 아무것도 하지 않음
+        alert('브라우저에서 알림 권한이 차단되었습니다. 설정을 변경해주세요.');
+      }
+    } else {
+      // 알림을 끄는 경우
+      updateSettings({ notifications: false });
+    }
+  };
 
   return (
     <motion.div
@@ -17,35 +34,6 @@ const SettingsPage: React.FC = () => {
         <h1 className="text-2xl font-bold mb-6">설정</h1>
 
         <div className="space-y-6">
-          {/* 테마 설정 */}
-          <div>
-            <h2 className="text-lg font-semibold mb-4">화면 설정</h2>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  {settings.theme === 'light' ? (
-                    <Sun className="w-5 h-5 text-gray-600" />
-                  ) : (
-                    <Moon className="w-5 h-5 text-gray-600" />
-                  )}
-                  <span>다크 모드</span>
-                </div>
-                <button
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    settings.theme === 'dark' ? 'bg-primary-600' : 'bg-gray-200'
-                  }`}
-                  onClick={() => updateSettings({ theme: settings.theme === 'light' ? 'dark' : 'light' })}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      settings.theme === 'dark' ? 'translate-x-6' : 'translate-x-1'
-                    }`}
-                  />
-                </button>
-              </div>
-            </div>
-          </div>
-
           {/* 언어 설정 */}
           <div>
             <h2 className="text-lg font-semibold mb-4">언어</h2>
@@ -75,7 +63,7 @@ const SettingsPage: React.FC = () => {
                   className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                     settings.notifications ? 'bg-primary-600' : 'bg-gray-200'
                   }`}
-                  onClick={() => updateSettings({ notifications: !settings.notifications })}
+                  onClick={handleNotificationToggle}
                 >
                   <span
                     className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${

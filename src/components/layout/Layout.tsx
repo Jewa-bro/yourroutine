@@ -31,7 +31,7 @@ const Layout: React.FC<LayoutProps> = ({ handleSignOut }) => {
       }
     }
   };
-  
+
   const isSwipeablePage = pages.includes(location.pathname);
   const isCalendarPage = location.pathname === '/calendar';
 
@@ -57,8 +57,8 @@ const Layout: React.FC<LayoutProps> = ({ handleSignOut }) => {
             : 'max-w-screen-xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28'}`
           }
         >
-            <Outlet />
-        </div>
+          <Outlet />
+          </div>
       </motion.main>
       
       <BottomNavbar />

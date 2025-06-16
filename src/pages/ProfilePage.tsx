@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useStore } from '../store/useStore';
-import { User, Mail, Calendar, Edit, Shield, LogOut } from 'lucide-react';
+import { User, Mail, Calendar, Edit, Shield, LogOut, Bell } from 'lucide-react';
 import ProfileEditModal from '../components/profile/ProfileEditModal';
 import PasswordChangeModal from '../components/profile/PasswordChangeModal';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabaseClient';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { toast } from 'react-hot-toast';
 
 const ProfilePage: React.FC = () => {
-  const { user, setUser } = useStore();
+  const { user, setUser, settings, updateSettings } = useStore();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [isSendingTest, setIsSendingTest] = useState(false);
   const navigate = useNavigate();
 
   if (!user) {
@@ -22,6 +24,26 @@ const ProfilePage: React.FC = () => {
       </div>
     );
   }
+
+  const handleSendTestNotification = async () => {
+    if (!user) return;
+    setIsSendingTest(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-test-notification', {
+        body: { userId: user.id },
+      });
+
+      if (error) {
+        throw error;
+      }
+      toast.success('테스트 알림을 전송했습니다. 기기를 확인해주세요!');
+    } catch (err: any) {
+      console.error('Error sending test notification:', err);
+      toast.error(`알림 전송에 실패했습니다: ${err.message}`);
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   // 스토어의 user 객체에서 직접 값을 사용
   const displayName = user.user_metadata?.full_name || user.user_metadata?.name || '사용자';
@@ -97,6 +119,99 @@ const ProfilePage: React.FC = () => {
                 <dd className="text-slate-700 sm:col-span-2">{registrationDate}</dd>
               </div>
             </dl>
+          </div>
+        </div>
+
+        {/* 알림 설정 - 위치 이동 */}
+        <div className="px-6 py-6 border-t border-slate-200">
+          <h2 className="text-lg font-semibold text-slate-700 mb-4">알림 설정</h2>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Bell className="w-5 h-5 text-gray-600" />
+                <span>알림 사용</span>
+              </div>
+              <button
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  settings.notifications ? 'bg-primary-600' : 'bg-gray-200'
+                }`}
+                onClick={() => updateSettings({ notifications: !settings.notifications })}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    settings.notifications ? 'translate-x-6' : 'translate-x-1'
+                  }`}
+                />
+              </button>
+            </div>
+
+            {settings.notifications && (
+              <>
+                <div className="flex items-center justify-between pl-7">
+                  <span>루틴 알림</span>
+                  <button
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      settings.routineReminders ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    onClick={() => updateSettings({ routineReminders: !settings.routineReminders })}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        settings.routineReminders ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pl-7">
+                  <span>할 일 알림</span>
+                  <button
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                      settings.todoReminders ? 'bg-primary-600' : 'bg-gray-200'
+                    }`}
+                    onClick={() => updateSettings({ todoReminders: !settings.todoReminders })}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        settings.todoReminders ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between pl-7">
+                  <span>알림 시간</span>
+                  <select
+                    className="form-select w-32"
+                    value={settings.reminderTime}
+                    onChange={(e) => updateSettings({ reminderTime: Number(e.target.value) })}
+                  >
+                    <option value="5">5분 전</option>
+                    <option value="10">10분 전</option>
+                    <option value="15">15분 전</option>
+                    <option value="30">30분 전</option>
+                    <option value="60">1시간 전</option>
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between pt-4">
+                  <div className="flex flex-col">
+                    <span className="font-medium text-slate-600">푸시 알림 테스트</span>
+                    <p className="text-xs text-slate-500 mt-1">
+                      현재 기기로 테스트 알림을 보내 정상 작동하는지 확인합니다.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleSendTestNotification}
+                    disabled={isSendingTest}
+                    className="btn-primary-outline text-sm px-4 py-2"
+                  >
+                    {isSendingTest ? '전송 중...' : '테스트 알림 보내기'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
 

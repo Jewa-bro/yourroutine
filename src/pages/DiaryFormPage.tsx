@@ -42,10 +42,10 @@ const DiaryFormPage: React.FC = () => {
         const queryParams = new URLSearchParams(window.location.search);
         const dateFromQuery = queryParams.get('date');
         setDate(dateFromQuery || new Date().toISOString().split('T')[0]);
-        setTitle('');
-        setContent('');
+      setTitle('');
+      setContent('');
         setMood('neutral');
-        setIsEditing(false);
+      setIsEditing(false);
     }
   }, [diaryId, diaries, navigate]);
 
@@ -57,41 +57,41 @@ const DiaryFormPage: React.FC = () => {
     }
 
     if (!isEditing && user) {
-        const currentUserId = user.id;
-        const selectedDate = new Date(date).toISOString().split('T')[0];
-        const existingDiary = diaries.find(
-          (d) => 
-            d.user_id === currentUserId &&
-            new Date(d.date).toISOString().split('T')[0] === selectedDate
-        );
-  
-        if (existingDiary) {
-          if (window.confirm('이미 해당 날짜에 작성된 일기가 있습니다. 기존 일기를 수정하시겠습니까?')) {
-            navigate(`/diary/edit/${existingDiary.id}`);
+      const currentUserId = user.id;
+      const selectedDate = new Date(date).toISOString().split('T')[0];
+      const existingDiary = diaries.find(
+        (d) => 
+          d.user_id === currentUserId &&
+          new Date(d.date).toISOString().split('T')[0] === selectedDate
+      );
+
+      if (existingDiary) {
+        if (window.confirm('이미 해당 날짜에 작성된 일기가 있습니다. 기존 일기를 수정하시겠습니까?')) {
+          navigate(`/diary/edit/${existingDiary.id}`);
             return;
-          }
-          return; 
         }
+        return; 
       }
-  
-      const diaryData = {
-        date: new Date(date).toISOString(),
+    }
+
+    const diaryData = {
+      date: new Date(date).toISOString(),
         title: title.trim() || '제목 없음', // 제목이 비어있으면 '제목 없음'으로 저장
-        content,
+      content,
         mood,
-      };
-  
-      try {
-        if (isEditing && diaryId) {
-          await updateDiary(diaryId, diaryData);
-          alert('일기가 수정되었습니다.');
-        } else {
-          await addDiary(diaryData as Omit<Diary, 'id' | 'createdAt' | 'user_id'>); 
-          alert('일기가 저장되었습니다.');
-        }
+    };
+
+    try {
+      if (isEditing && diaryId) {
+        await updateDiary(diaryId, diaryData);
+        alert('일기가 수정되었습니다.');
+      } else {
+        await addDiary(diaryData as Omit<Diary, 'id' | 'createdAt' | 'user_id'>); 
+        alert('일기가 저장되었습니다.');
+      }
         navigate('/dashboard');
-      } catch (error: any) {
-        console.error('일기 저장/수정 중 오류 발생:', error);
+    } catch (error: any) {
+      console.error('일기 저장/수정 중 오류 발생:', error);
         alert('일기 처리 중 오류가 발생했습니다.');
       }
   };
@@ -110,7 +110,7 @@ const DiaryFormPage: React.FC = () => {
       }
     }
   };
-  
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -122,12 +122,12 @@ const DiaryFormPage: React.FC = () => {
           
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b-2 border-gray-300 pb-4 mb-4">
             <input
-                type="date"
-                id="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
+              type="date"
+              id="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
                 className="text-gray-600 font-semibold bg-transparent focus:outline-none mb-2 sm:mb-0"
-                required
+              required
             />
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-gray-600">오늘의 기분:</span>
@@ -185,12 +185,12 @@ const DiaryFormPage: React.FC = () => {
                   삭제하기
                 </Button>
               )}
-            </div>
-            
+          </div>
+
             <div className="flex items-center space-x-4">
               <Button type="button" onClick={() => navigate(-1)} variant="outline">
                 <X className="mr-2 h-4 w-4" />
-                취소
+              취소
               </Button>
               <Button type="submit">
                 <Save className="mr-2 h-4 w-4" />
@@ -198,7 +198,7 @@ const DiaryFormPage: React.FC = () => {
               </Button>
             </div>
           </div>
-      </form>
+        </form>
     </motion.div>
   );
 };

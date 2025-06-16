@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Routine, RoutineInstances } from '../../types';
-import { format } from 'date-fns';
+import { format, isToday } from 'date-fns';
 
 interface RoutineProgressBarProps {
   todaysRoutines: Routine[];
@@ -53,7 +53,11 @@ const RoutineProgressBar: React.FC<RoutineProgressBarProps> = ({ todaysRoutines,
   return (
     <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
         <div className="flex justify-between items-center mb-2">
-            <h3 className="text-md font-semibold text-gray-700">오늘의 루틴 진행도</h3>
+            <h3 className="text-md font-semibold text-gray-700">
+              {isToday(currentDate)
+                ? '오늘의 루틴 진행도'
+                : format(currentDate, 'M월 d일의 루틴 진행율')}
+            </h3>
             <span className="text-lg font-bold" style={{ color: barColor }}>
                 {Math.round(percentage)}%
             </span>

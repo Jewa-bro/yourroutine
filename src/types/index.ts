@@ -22,7 +22,7 @@ export interface Routine {
 // 루틴 인스턴스 타입 정의
 export interface RoutineInstances {
   [routineId: string]: {
-    [date: string]: Routine['status'];
+    [date: string]: 'completed' | 'skipped' | 'pending' | 'unchecked';
   };
 }
 
@@ -91,4 +91,14 @@ export interface Settings {
   routineReminders: boolean;
   todoReminders: boolean;
   reminderTime: number; // 예: 30 (분)
+}
+
+export interface Notification {
+  id: string;
+  user_id: string;
+  title: string;
+  body: string;
+  url?: string;
+  is_read: boolean;
+  created_at: string;
 }

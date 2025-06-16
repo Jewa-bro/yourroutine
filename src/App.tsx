@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation, useNavigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Layout from './components/layout/Layout';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Dashboard from './pages/Dashboard';
@@ -7,7 +8,6 @@ import RoutinePage from './pages/RoutinePage';
 import NewRoutinePage from './pages/NewRoutinePage';
 import RoutineCheckPage from './pages/RoutineCheckPage';
 import CalendarPage from './pages/CalendarPage';
-import StatisticsPage from './pages/StatisticsPage';
 import ProfilePage from './pages/ProfilePage';
 import SettingsPage from './pages/SettingsPage';
 import LoginPage from './pages/LoginPage';
@@ -15,84 +15,94 @@ import SignupPage from './pages/SignupPage';
 import DiaryFormPage from './pages/DiaryFormPage';
 import TodoFormModal from './components/todos/TodoFormModal';
 import { useStore } from './store/useStore';
-import { Routine } from './types';
-import { format, startOfDay } from 'date-fns';
 import { supabase } from './lib/supabaseClient';
+import { useNotificationScheduler } from './hooks/useNotificationScheduler';
+import { requestNotificationPermission, subscribeToPushNotifications } from './utils/notification';
+
+function NotificationScheduler() {
+  // settings.notifications와 settings.routineReminders가 모두 true일 때만 스케줄러 훅을 활성화
+  // 조건부 로직은 훅 내부로 이동했습니다.
+  useNotificationScheduler();
+
+  return null; // 이 컴포넌트는 UI를 렌더링하지 않음
+}
 
 function App() {
-  const { fetchAndSetUser } = useStore();
-  const [isAuthReady, setAuthReady] = useState(false);
+  const { user, fetchAndSetUser, fetchInitialData, isLoading } = useStore(state => ({
+    user: state.user,
+    fetchAndSetUser: state.fetchAndSetUser,
+    fetchInitialData: state.fetchInitialData,
+    isLoading: state.isLoading,
+  }));
   const navigate = useNavigate();
   const location = useLocation();
-
+  
   useEffect(() => {
-    // 1. 앱 시작 시 Supabase 세션을 확인하여 자동 로그인 처리
-    const checkUserSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        await fetchAndSetUser(session.user); // Zustand 스토어에 사용자 및 프로필 정보 저장
-      }
-      setAuthReady(true); // 인증 상태 준비 완료
-    };
-
-    checkUserSession();
-
-    // 2. 인증 상태 변경 감지 (로그인/로그아웃)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        fetchAndSetUser(session?.user ?? null); // 로그인/로그아웃 시 스토어 업데이트
-        if (_event === 'SIGNED_IN') {
-          navigate('/dashboard');
-        }
-        if (_event === 'SIGNED_OUT') {
-          navigate('/login');
-        }
-      }
-    );
-
-    // 3. 컴포넌트 언마운트 시 구독 해제
-    return () => subscription.unsubscribe();
-  }, [fetchAndSetUser, navigate]);
-
-  // isClient 로직은 그대로 유지
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
+    // 서비스 워커 등록
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/service-worker.js')
+        .then(registration => console.log('Service Worker registered:', registration))
+        .catch(error => console.log('Service Worker registration failed:', error));
+    }
   }, []);
+
+  useEffect(() => {
+    // 1. Supabase의 인증 상태 변경을 감지하는 리스너 설정
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      // 리스너는 오직 현재 사용자 정보를 스토어에 업데이트하는 역할만 수행
+      // 로그인 시 session.user가, 로그아웃 시 null이 전달됨
+      fetchAndSetUser(session?.user ?? null);
+    });
+
+    // 컴포넌트가 사라질 때 리스너 정리
+    return () => subscription.unsubscribe();
+  }, [fetchAndSetUser]);
+
+  useEffect(() => {
+    if (user) {
+      requestNotificationPermission().then(granted => {
+        if (granted) {
+          console.log("Notification permission granted. Subscribing to push notifications.");
+          subscribeToPushNotifications();
+        }
+      });
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      if (location.pathname === '/login' || location.pathname === '/signup') {
+        navigate('/dashboard', { replace: true });
+      }
+      fetchInitialData();
+    }
+  }, [user, fetchInitialData, navigate, location.pathname]);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    // onAuthStateChange가 자동으로 setUser(null)과 navigate를 처리합니다.
   };
-
-  // 인증 상태가 준비되지 않았으면 로딩 스피너 표시
-  if (!isAuthReady) {
-    return (
-      <div className="w-full h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary-500"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen bg-gray-50 antialiased">
+      <Toaster position="top-center" reverseOrder={false} />
       <TodoFormModal />
+      <NotificationScheduler />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout handleSignOut={handleSignOut} />}>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/routines" element={<RoutinePage />} />
-            <Route path="/routines/new" element={<NewRoutinePage />} />
-            <Route path="/routines/edit/:id" element={<NewRoutinePage />} />
-            <Route path="/routine-check" element={<RoutineCheckPage />} />
-            <Route path="/diary/new" element={<DiaryFormPage />} />
-            <Route path="/diary/edit/:diaryId" element={<DiaryFormPage />} />
-            <Route path="/calendar" element={<CalendarPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/settings" element={<SettingsPage />} />
+          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/routines" element={<RoutinePage />} />
+          <Route path="/routines/new" element={<NewRoutinePage />} />
+          <Route path="/routines/edit/:id" element={<NewRoutinePage />} />
+          <Route path="/routine-check" element={<RoutineCheckPage />} />
+          <Route path="/diary/new" element={<DiaryFormPage />} />
+          <Route path="/diary/edit/:diaryId" element={<DiaryFormPage />} />
+          <Route path="/calendar" element={<CalendarPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/settings" element={<SettingsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/dashboard" replace />} />

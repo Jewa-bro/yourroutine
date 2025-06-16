@@ -31,9 +31,10 @@ const MarqueeText: React.FC<{ text: string }> = ({ text }) => {
 
 interface CalendarProps {
   variant?: 'default' | 'small';
+  onMobileDayClick?: () => void;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
+const Calendar: React.FC<CalendarProps> = ({ variant = 'default', onMobileDayClick }) => {
   const {
     currentDate,
     setCurrentDate,
@@ -54,7 +55,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
 
   useEffect(() => {
     if (!isSameMonth(currentDate, displayedMonthDate) || !isSameYear(currentDate, displayedMonthDate)) {
-      setDisplayedMonthDate(currentDate);
+        setDisplayedMonthDate(currentDate);
     }
   }, [currentDate]);
 
@@ -70,7 +71,7 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     if (isSmall) {
       // 작은 달력에서는 특별한 동작 없음
     } else if (window.innerWidth < 1024) {
-      navigate('/dashboard'); // 큰 달력을 모바일에서 볼 때, 날짜 누르면 대시보드로 이동
+      onMobileDayClick?.();
     }
   };
 
@@ -97,10 +98,10 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
     let flameIconStyle: React.CSSProperties = {};
     const dateStr = format(date, 'yyyy-MM-dd');
     if (!isBefore(date, startOfDay(new Date(routines[0]?.created_at || new Date())))) {
-      const completionStatus = getRoutineCompletionStatusForDate(date);
-      if (completionStatus === 'ALL_COMPLETE') {
+    const completionStatus = getRoutineCompletionStatusForDate(date);
+    if (completionStatus === 'ALL_COMPLETE') {
         flameIconContent = '🔥';
-      } else if (completionStatus === 'SOME_INCOMPLETE') {
+    } else if (completionStatus === 'SOME_INCOMPLETE') {
         flameIconContent = '🔥';
         flameIconStyle = { filter: 'grayscale(1)', opacity: 0.5 };
       }
@@ -124,11 +125,14 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
       dayNumberClassesList.push('text-red-600');
     }
     
+    const isTodayDate = isSameDay(date, new Date());
+    const isSelectedDate = isSameDay(date, currentDate);
+
     // 작은 달력 (대시보드) 뷰
     if (isSmall) {
       return (
         <>
-          <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
+          <span className={dayNumberClassesList.concat('!text-gray-800').join(' ')}>{dayOfMonth}</span>
           {!isOutside && flameIconContent && (
             <span className="absolute top-0 right-0" style={{ fontSize: '12px', ...flameIconStyle }}>
               {flameIconContent}
@@ -148,18 +152,21 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
       ...todosForDay.map(t => ({ id: t.id, content: t.content, completed: t.completed, type: 'todo' as const }))
     ];
     
-    const maxVisibleEvents = 4;
-    const visibleEvents = eventsForDay.slice(0, maxVisibleEvents);
-    const hiddenEventsCount = eventsForDay.length - maxVisibleEvents;
+    // 날짜 셀 전체에 스타일 적용
+    const cellHighlight = [
+      isSelectedDate ? 'bg-blue-100' : '',
+      isTodayDate ? 'ring-2 ring-blue-500' : '',
+      'flex flex-col h-full py-1.5 transition'
+    ].join(' ');
 
     return (
-      <div className="flex flex-col h-full py-1.5 overflow-hidden">
+      <div className={cellHighlight}>
         <div className="flex items-center px-1.5">
-          <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
+        <span className={dayNumberClassesList.join(' ')}>{dayOfMonth}</span>
           {!isOutside && flameIconContent && <span className="ml-auto text-sm" style={{ ...flameIconStyle }}>{flameIconContent}</span>}
         </div>
-        <div className="flex-grow space-y-1 mt-1 text-xs overflow-hidden">
-          {visibleEvents.map(event => (
+        <div className="flex-grow space-y-1 mt-1 text-xs overflow-y-auto pr-1">
+          {eventsForDay.map(event => (
             <div key={event.id} title={event.content} className={`p-1 rounded-md text-left text-white ${
               event.type === 'diary' ? 'bg-amber-500' :
               event.completed ? 'bg-green-500' : 'bg-sky-500'
@@ -167,9 +174,6 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
               <MarqueeText text={event.content} />
             </div>
           ))}
-          {hiddenEventsCount > 0 && (
-             <div className="text-gray-500 text-center text-[10px] pt-1">+ {hiddenEventsCount} more</div>
-          )}
         </div>
       </div>
     );
@@ -199,30 +203,30 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
   };
 
   const defaultCalendarClasses = {
-    root: 'bg-white w-full h-full flex flex-col',
-    months: 'w-full h-full flex flex-col',
-    month: 'w-full h-full flex flex-col flex-grow',
+    root: 'bg-white w-full flex flex-col',
+    months: 'w-full flex flex-col',
+    month: 'w-full flex flex-col',
     caption: 'flex justify-center relative items-center py-4 px-2 border-b',
     caption_label: 'font-semibold text-gray-800 text-lg sm:text-xl',
     nav: 'space-x-1 sm:space-x-1.5 flex items-center',
     nav_button: 'bg-transparent rounded-full flex items-center justify-center hover:bg-gray-100 h-8 w-8 sm:h-9 sm:w-9',
     nav_button_previous: 'absolute left-2',
     nav_button_next: 'absolute right-2',
-    table: 'w-full border-collapse flex-grow flex flex-col',
+    table: 'w-full border-collapse flex flex-col',
     head_row: 'flex font-medium text-gray-500',
     head_cell: 'flex-1 text-center p-2 border-b',
-    tbody: 'flex-grow flex flex-col',
-    row: 'flex flex-grow',
+    tbody: 'flex flex-col',
+    row: 'flex h-32',
     cell: 'flex-1 relative border-r border-b last:border-r-0 min-w-0 overflow-hidden',
     day: 'w-full h-full hover:bg-gray-50',
     day_selected: 'bg-primary-100 hover:bg-primary-100 font-semibold',
-    day_today: 'bg-primary-50',
+    day_today: '',
     day_disabled: 'text-gray-300 opacity-50 bg-gray-50',
     day_hidden: 'invisible',
   };
 
   return (
-    <div className={`w-full ${isSmall ? 'max-w-xs mx-auto' : 'h-full'}`}>
+    <div className={`w-full ${isSmall ? 'max-w-xs mx-auto' : ''}`}>
       <DayPicker
         mode="single"
         selected={currentDate}
@@ -231,7 +235,6 @@ const Calendar: React.FC<CalendarProps> = ({ variant = 'default' }) => {
         onMonthChange={handleMonthChange}
         locale={ko}
         showOutsideDays
-        fixedWeeks
         classNames={isSmall ? smallCalendarClasses : defaultCalendarClasses}
         components={{ DayContent }}
       />

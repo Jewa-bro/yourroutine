@@ -13,13 +13,14 @@ interface StoreState {
   settings: Omit<Settings, 'theme'>;
   routineInstances: RoutineInstances;
   initialDataFetched: boolean;
-  loading: boolean;
+  isLoading: boolean;
   completedDates: Record<string, boolean>;
   confettiFiredFor: Record<string, boolean>;
   isTodoModalOpen: boolean;
   editingTodo: Todo | null;
   
-  // 로그인/로그아웃 액션 (추가)
+  // 인증 관련 액션
+  signIn: (password: string, userEmail: string) => Promise<void>;
   setUser: (user: User | null) => void;
   fetchAndSetUser: (supabaseUser: any) => Promise<void>;
   fetchInitialData: () => Promise<void>;
@@ -86,6 +87,15 @@ const mapSupabaseTodoToLocal = (supabaseTodo: any): Todo => {
   } as Todo;
 };
 
+const formatTimeField = (value: any) => {
+  if (!value) return undefined;
+  if (typeof value === 'string') return value; // 이미 'HH:MM:SS'
+  if (value instanceof Date) {
+    return value.toISOString().substring(11,19); // HH:MM:SS
+  }
+  return undefined;
+};
+
 export const useStore = create<StoreState>((set, get) => ({
   // 초기 상태
   routines: [],
@@ -102,32 +112,40 @@ export const useStore = create<StoreState>((set, get) => ({
   },
   routineInstances: {},
   initialDataFetched: false,
-  loading: false,
+  isLoading: true,
   completedDates: {},
   confettiFiredFor: {},
   isTodoModalOpen: false,
   editingTodo: null,
+
+  signIn: async (password, userEmail) => {
+    set({ isLoading: true });
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: userEmail,
+        password: password,
+      });
+      if (error) throw error;
+      // 성공 시 onAuthStateChange 리스너가 후속 처리를 담당
+    } catch (error) {
+      // 실패 시 isLoading을 false로 되돌리고 에러를 다시 던짐
+      set({ isLoading: false });
+      throw error;
+    }
+  },
   
   setUser: (user) => {
     set({ user });
-    if (user) {
-      localStorage.setItem('loggedInUser', JSON.stringify({
-        id: user.id,
-        email: user.email,
-        name: user.user_metadata?.full_name || user.user_metadata?.name,
-        avatar_url: user.user_metadata?.avatar_url,
-      }));
-      // 사용자가 설정되면 초기 데이터 로드 트리거
-      get().fetchInitialData();
-    } else {
-      // 로그아웃 시 관련 데이터 초기화
+    if (!user) {
+      // 로그아웃 시 관련 데이터 초기화 및 로딩 상태 완료 처리
       localStorage.removeItem('loggedInUser');
       set({ 
         routines: [], 
         todos: [], 
         diaries: [], 
         routineInstances: {},
-        initialDataFetched: false,
+        initialDataFetched: true,
+        isLoading: false,
       });
     }
   },
@@ -140,28 +158,27 @@ export const useStore = create<StoreState>((set, get) => ({
 
     try {
       const { data: profile, error } = await supabase
-        .from('custom_users')
-        .select('username, full_name, avatar_url, bio')
-        .eq('id', supabaseUser.id)
-        .single();
+          .from('custom_users') 
+          .select('username, full_name, avatar_url, bio')
+          .eq('id', supabaseUser.id)
+          .single();
 
       if (error) {
         console.error("Error fetching user profile:", error);
-        // 프로필이 없어도 기본 auth 정보로 사용자 설정
         get().setUser(mapSupabaseAuthUserToLocalUser(supabaseUser));
         return;
       }
-
+      
       const fullUser: User = {
         id: supabaseUser.id,
         email: supabaseUser.email,
         created_at: supabaseUser.created_at,
-        user_metadata: {
-          name: profile.username, // Supabase DB의 username을 기본 이름으로 사용
+        user_metadata: { 
+          name: profile.username,
           full_name: profile.full_name,
           avatar_url: profile.avatar_url,
           bio: profile.bio,
-          ...supabaseUser.user_metadata, // 다른 메타데이터도 유지
+          ...supabaseUser.user_metadata,
         },
       };
 
@@ -169,21 +186,20 @@ export const useStore = create<StoreState>((set, get) => ({
 
     } catch (e) {
       console.error("Exception in fetchAndSetUser:", e);
-      // 예외 발생 시에도 기본 auth 정보로 사용자 설정
       get().setUser(mapSupabaseAuthUserToLocalUser(supabaseUser));
     }
   },
 
   fetchInitialData: async () => {
     const user = get().user;
-    if (!user || get().loading) {
-      set({ initialDataFetched: true });
+    if (!user) {
+      set({ initialDataFetched: true, isLoading: false });
       return;
     }
-    set({ loading: true });
+    // fetchInitialData가 호출되면 항상 로딩 상태로 설정
+    set({ isLoading: true });
     try {
       const userId = user.id;
-
       // 여러 데이터를 병렬로 가져옵니다.
       const [
         { data: routinesData, error: routinesError },
@@ -215,7 +231,7 @@ export const useStore = create<StoreState>((set, get) => ({
         // 에러 발생 시 데이터 초기화
         set({ routines: [], todos: [], diaries: [] });
     } finally {
-        set({ loading: false, initialDataFetched: true });
+        set({ isLoading: false, initialDataFetched: true });
     }
   },
 
@@ -378,14 +394,14 @@ export const useStore = create<StoreState>((set, get) => ({
       }
       return max;
     }, -1);
-
+    
     const dataToInsert = { 
       ...routineData, 
       user_id: user.id,
       daysofweek: Array.isArray(routineData.daysofweek) ? routineData.daysofweek : [],
       trigger: routineData.trigger || undefined,
-      startTime: routineData.startTime || undefined,
-      endTime: routineData.endTime || undefined,
+      startTime: formatTimeField(routineData.startTime),
+      endTime: formatTimeField(routineData.endTime),
       sort_order: maxSortOrder + 1,
     };
 
@@ -415,8 +431,8 @@ export const useStore = create<StoreState>((set, get) => ({
       ...routineUpdate,
       // trigger 또는 time 필드 정리
       trigger: routineUpdate.trigger || undefined,
-      startTime: routineUpdate.startTime || undefined,
-      endTime: routineUpdate.endTime || undefined,
+      startTime: formatTimeField(routineUpdate.startTime),
+      endTime: formatTimeField(routineUpdate.endTime),
     };
 
     if (routineUpdate.hasOwnProperty('daysofweek')) {
@@ -513,7 +529,7 @@ export const useStore = create<StoreState>((set, get) => ({
       user_id: user.id,
       content: todoData.content,
       due_date: todoData.dueDate,
-      is_completed: false,
+      is_completed: false, 
     };
 
     const { data: newTodo, error } = await supabase
