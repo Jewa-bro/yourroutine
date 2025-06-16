@@ -25,8 +25,7 @@ serve(async (req) => {
         name,
         user_id,
         daysofweek,
-        startTime,
-        notification_time
+        startTime
       `)
       .eq('is_active', true);
 
@@ -38,7 +37,7 @@ serve(async (req) => {
 
     const dueRoutines = routines.filter(routine => {
       const isDueDay = (routine.daysofweek || []).includes(currentDay.toString());
-      const routineTimeStr = (routine.notification_time ?? routine.startTime ?? '').slice(0,5);
+      const routineTimeStr = (routine.startTime ?? '').slice(0,5);
       const isDueTime = routineTimeStr === currentTime;
       return isDueDay && isDueTime;
     });
