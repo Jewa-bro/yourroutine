@@ -22,11 +22,11 @@ serve(async (req) => {
       .from('routines')
       .select(`
         id,
-        title,
+        name,
         user_id,
-        days_of_week,
-        notification_time,
-        startTime
+        daysofweek,
+        startTime,
+        notification_time
       `)
       .eq('is_active', true);
 
@@ -37,7 +37,7 @@ serve(async (req) => {
     const currentTime = today.toTimeString().slice(0, 5); // HH:MM format
 
     const dueRoutines = routines.filter(routine => {
-      const isDueDay = routine.days_of_week.includes(currentDay.toString());
+      const isDueDay = (routine.daysofweek || []).includes(currentDay.toString());
       const routineTimeStr = (routine.notification_time ?? routine.startTime ?? '').slice(0,5);
       const isDueTime = routineTimeStr === currentTime;
       return isDueDay && isDueTime;
@@ -62,7 +62,7 @@ serve(async (req) => {
       }
 
       const payload = JSON.stringify({
-        title: `🔔 루틴 알림: ${routine.title}`,
+        title: `🔔 루틴 알림: ${routine.name}`,
         body: '오늘의 루틴을 시작할 시간입니다!',
         icon: '/logo192.svg',
         url: `/routine/${routine.id}`,
