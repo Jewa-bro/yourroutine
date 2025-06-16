@@ -30,9 +30,11 @@ serve(async (req) => {
 
     if (routinesError) throw routinesError;
 
-    const today = new Date();
-    const currentDay = today.getDay(); // Sunday - 0, Monday - 1, etc.
-    const currentTime = today.toTimeString().slice(0, 5); // HH:MM format
+    // ---- 현재 시간을 한국 표준시(KST, UTC+9) 기준으로 변환 ----
+    const nowUtc = Date.now();
+    const kstDate = new Date(nowUtc + 9 * 60 * 60 * 1000); // UTC+9 오프셋 적용
+    const currentDay = kstDate.getUTCDay(); // Sunday - 0, Monday - 1, etc.
+    const currentTime = kstDate.toISOString().substr(11, 5); // 'HH:MM'
 
     const dueRoutines = routines.filter(routine => {
       const isDueDay = (routine.daysofweek || []).includes(currentDay.toString());
