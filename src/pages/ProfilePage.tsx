@@ -135,7 +135,24 @@ const ProfilePage: React.FC = () => {
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
                   settings.notifications ? 'bg-primary-600' : 'bg-gray-200'
                 }`}
-                onClick={() => updateSettings({ notifications: !settings.notifications })}
+                onClick={async () => {
+                  if (!settings.notifications) {
+                    // 알림을 켜려는 경우 권한 요청
+                    const { requestNotificationPermission, subscribeToPushNotifications } = await import('../utils/notification');
+                    const granted = await requestNotificationPermission();
+                    if (granted) {
+                      await subscribeToPushNotifications();
+                      updateSettings({ notifications: true });
+                      toast.success('알림이 설정되었습니다!');
+                    } else {
+                      toast.error('알림 권한이 필요합니다. 브라우저 설정에서 알림을 허용해주세요.');
+                    }
+                  } else {
+                    // 알림을 끄는 경우
+                    updateSettings({ notifications: false });
+                    toast.success('알림이 해제되었습니다.');
+                  }
+                }}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${

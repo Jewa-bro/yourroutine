@@ -37,8 +37,13 @@ serve(async (req) => {
     const currentTime = kstDate.toISOString().substr(11, 5); // 'HH:MM'
 
     const dueRoutines = routines.filter(routine => {
-      const isDueDay = (routine.daysofweek || []).includes(currentDay.toString());
+      const dayArr = (routine.daysofweek || []).map((d:any)=> Number(d));
+      const isDueDay = dayArr.includes(currentDay);
+      if (isDueDay) {
+        console.log('DEBUG match day', {currentDay, dayArr});
+      }
       const routineTimeStr = (routine.startTime ?? '').slice(0,5);
+      console.log('DEBUG time compare', {currentTime, routineTimeStr});
       const isDueTime = routineTimeStr === currentTime;
       return isDueDay && isDueTime;
     });

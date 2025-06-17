@@ -1,16 +1,19 @@
-name: routine-push
+name: Send Routine Push Notifications
 
 on:
   schedule:
-    - cron: '*/1 * * * *' # 매 분 실행
-  workflow_dispatch:      # 수동 실행도 가능
+    # 매분마다 실행 (UTC 기준)
+    - cron: '* * * * *'
+  workflow_dispatch: # 수동 실행도 가능
 
 jobs:
-  call:
+  send-notifications:
     runs-on: ubuntu-latest
+    
     steps:
-      - name: Invoke Supabase Function
+      - name: Send routine notifications
         run: |
-          curl -s -X POST \
-            -H "Authorization: Bearer ${{ secrets.SUPA_SERVICE_ROLE }}" \
-            https://yuxldeedykivvjwpcfel.supabase.co/functions/v1/send-routine-notifications 
+          curl -X POST "${{ secrets.SUPABASE_URL }}/functions/v1/send-routine-notifications" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}' 
