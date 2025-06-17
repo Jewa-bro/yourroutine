@@ -18,6 +18,15 @@
     <!-- iOS PWA Support -->
     <meta name="apple-mobile-web-app-title" content="루틴플로우">
     <link rel="apple-touch-icon" href="/logo192.svg">
+
+    <!-- 모바일 콘솔 디버깅용 Eruda -->
+    <script src="https://cdn.jsdelivr.net/npm/eruda@3.0.1/eruda.min.js"></script>
+    <script>
+      // 모바일 환경에서만 Eruda 활성화
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+        eruda.init();
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -15,6 +15,7 @@ const ProfilePage: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [isSendingTest, setIsSendingTest] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([]);
   const navigate = useNavigate();
 
   if (!user) {
@@ -25,13 +26,25 @@ const ProfilePage: React.FC = () => {
     );
   }
 
+  const addDebugInfo = (info: string) => {
+    setDebugInfo(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${info}`]);
+  };
+
   const handleSendTestNotification = async () => {
     if (!user) return;
     setIsSendingTest(true);
+    addDebugInfo('푸시 알림 테스트 시작');
+    
     try {
+      // 환경 변수 확인
+      const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+      addDebugInfo(`VAPID 키 존재: ${!!vapidKey}`);
+      addDebugInfo(`알림 권한: ${Notification.permission}`);
+      
       // 알림 권한 강제 확인 및 요청
       if (Notification.permission !== 'granted') {
         const permission = await Notification.requestPermission();
+        addDebugInfo(`권한 요청 결과: ${permission}`);
         if (permission !== 'granted') {
           toast.error('알림 권한이 필요합니다. 브라우저 설정에서 알림을 허용해주세요.');
           setIsSendingTest(false);
@@ -40,9 +53,12 @@ const ProfilePage: React.FC = () => {
       }
 
       // 푸시 구독 확인 및 재등록
+      addDebugInfo('푸시 구독 시작');
       const { subscribeToPushNotifications } = await import('../utils/notification');
       await subscribeToPushNotifications();
+      addDebugInfo('푸시 구독 완료');
 
+      addDebugInfo('서버 요청 시작');
       const { error } = await supabase.functions.invoke('send-test-notification', {
         body: { userId: user.id },
       });
@@ -50,9 +66,11 @@ const ProfilePage: React.FC = () => {
       if (error) {
         throw error;
       }
+      addDebugInfo('서버 요청 성공');
       toast.success('테스트 알림을 전송했습니다. 기기를 확인해주세요!');
     } catch (err: any) {
       console.error('Error sending test notification:', err);
+      addDebugInfo(`오류: ${err.message}`);
       toast.error(`알림 전송에 실패했습니다: ${err.message}`);
     } finally {
       setIsSendingTest(false);
@@ -269,6 +287,24 @@ const ProfilePage: React.FC = () => {
                     </button>
                   </div>
                 </div>
+
+                {/* 디버그 정보 표시 */}
+                {debugInfo.length > 0 && (
+                  <div className="mt-4 p-3 bg-gray-100 rounded-lg">
+                    <h4 className="text-sm font-medium text-gray-700 mb-2">디버그 정보:</h4>
+                    <div className="text-xs text-gray-600 space-y-1">
+                      {debugInfo.map((info, index) => (
+                        <div key={index}>{info}</div>
+                      ))}
+                    </div>
+                    <button
+                      onClick={() => setDebugInfo([])}
+                      className="mt-2 text-xs text-blue-500 hover:text-blue-700"
+                    >
+                      지우기
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
