@@ -67,8 +67,8 @@ self.addEventListener('push', function(event) {
   const title = data.title;
   const options = {
     body: data.body,
-    icon: './logo192.svg', // 앱 아이콘 경로
-    badge: './logo192.svg', // 작은 뱃지 아이콘 경로
+    icon: '/logo192.svg', // 앱 아이콘 경로
+    badge: '/logo192.svg', // 작은 뱃지 아이콘 경로
     data: {
         url: data.url || '/'
     }
