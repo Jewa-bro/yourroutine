@@ -59,15 +59,22 @@ const ProfilePage: React.FC = () => {
       addDebugInfo('푸시 구독 완료');
 
       addDebugInfo('서버 요청 시작');
-      const { error } = await supabase.functions.invoke('send-test-notification', {
+      const { data, error } = await supabase.functions.invoke('send-test-notification', {
         body: { userId: user.id },
       });
 
       if (error) {
         throw error;
       }
+      addDebugInfo(`서버 응답: ${JSON.stringify(data)}`);
       addDebugInfo('서버 요청 성공');
       toast.success('테스트 알림을 전송했습니다. 기기를 확인해주세요!');
+      
+      // 푸시 알림 도착 대기
+      addDebugInfo('푸시 알림 도착 대기 중... (5초)');
+      setTimeout(() => {
+        addDebugInfo('푸시 알림이 도착하지 않았다면 시스템 설정을 확인해주세요.');
+      }, 5000);
     } catch (err: any) {
       console.error('Error sending test notification:', err);
       addDebugInfo(`오류: ${err.message}`);
