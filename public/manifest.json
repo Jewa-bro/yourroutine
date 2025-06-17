@@ -2,10 +2,20 @@
   "name": "루틴플로우: 당신의 일상을 체계적으로",
   "short_name": "루틴플로우",
   "description": "매일의 루틴을 관리하고 건강한 습관을 만드세요.",
-  "start_url": ".",
+  "start_url": "/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "theme_color": "#6366f1",
+  "categories": ["productivity", "lifestyle"],
+  "screenshots": [
+    {
+      "src": "logo512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "form_factor": "wide"
+    }
+  ],
   "icons": [
     {
       "src": "favicon.ico",
@@ -15,12 +25,14 @@
     {
       "src": "logo192.svg",
       "type": "image/svg+xml",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any maskable"
     },
     {
       "src": "logo512.svg",
       "type": "image/svg+xml",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any maskable"
     }
   ]
 } 

@@ -295,6 +295,19 @@ const ProfilePage: React.FC = () => {
                   </div>
                 </div>
 
+                {/* PWA 설치 안내 */}
+                <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-blue-800 mb-2">📱 진짜 앱 알림을 받으려면:</h4>
+                  <div className="text-sm text-blue-700 space-y-2">
+                    <div><strong>1단계:</strong> Chrome 메뉴(⋮) → "홈 화면에 추가" 클릭</div>
+                    <div><strong>2단계:</strong> 홈 화면의 "루틴플로우" 앱으로 접속</div>
+                    <div><strong>3단계:</strong> 설정 → 앱 → 루틴플로우 → 알림 허용</div>
+                    <div className="text-xs text-blue-600 mt-2">
+                      ✨ 설치된 앱에서는 소리+진동과 함께 푸시 알림이 옵니다!
+                    </div>
+                  </div>
+                </div>
+
                 {/* 디버그 정보 표시 */}
                 {debugInfo.length > 0 && (
                   <div className="mt-4 p-3 bg-gray-100 rounded-lg">
