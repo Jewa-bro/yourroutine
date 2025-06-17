@@ -29,6 +29,20 @@ const ProfilePage: React.FC = () => {
     if (!user) return;
     setIsSendingTest(true);
     try {
+      // 알림 권한 강제 확인 및 요청
+      if (Notification.permission !== 'granted') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          toast.error('알림 권한이 필요합니다. 브라우저 설정에서 알림을 허용해주세요.');
+          setIsSendingTest(false);
+          return;
+        }
+      }
+
+      // 푸시 구독 확인 및 재등록
+      const { subscribeToPushNotifications } = await import('../utils/notification');
+      await subscribeToPushNotifications();
+
       const { error } = await supabase.functions.invoke('send-test-notification', {
         body: { userId: user.id },
       });
@@ -218,14 +232,32 @@ const ProfilePage: React.FC = () => {
                       현재 기기로 테스트 알림을 보내 정상 작동하는지 확인합니다.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleSendTestNotification}
-                    disabled={isSendingTest}
-                    className="btn-primary-outline text-sm px-4 py-2"
-                  >
-                    {isSendingTest ? '전송 중...' : '테스트 알림 보내기'}
-                  </button>
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (Notification.permission === 'granted') {
+                          new Notification('브라우저 알림 테스트', {
+                            body: '브라우저 기본 알림이 정상 작동합니다!',
+                            icon: '/logo192.svg'
+                          });
+                        } else {
+                          toast.error('알림 권한이 필요합니다.');
+                        }
+                      }}
+                      className="btn-secondary text-sm px-3 py-2"
+                    >
+                      브라우저 알림
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSendTestNotification}
+                      disabled={isSendingTest}
+                      className="btn-primary-outline text-sm px-4 py-2"
+                    >
+                      {isSendingTest ? '전송 중...' : '푸시 알림'}
+                    </button>
+                  </div>
                 </div>
               </>
             )}

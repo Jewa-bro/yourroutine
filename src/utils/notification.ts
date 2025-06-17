@@ -30,9 +30,16 @@ export async function subscribeToPushNotifications() {
         // 구독이 없는 경우 새로 생성
         console.log('No subscription found, creating new one.');
         const vapidPublicKey = import.meta.env.VITE_VAPID_PUBLIC_KEY;
+        console.log('VAPID Public Key available:', !!vapidPublicKey);
+        console.log('Environment check:', {
+          supabaseUrl: !!import.meta.env.VITE_SUPABASE_URL,
+          supabaseKey: !!import.meta.env.VITE_SUPABASE_ANON_KEY,
+          vapidKey: !!vapidPublicKey
+        });
+        
         if (!vapidPublicKey) {
-            console.error('VITE_VAPID_PUBLIC_KEY is not set in .env file');
-            return;
+            console.error('VITE_VAPID_PUBLIC_KEY is not set in environment variables');
+            throw new Error('VAPID 공개 키가 설정되지 않았습니다.');
         }
 
         subscription = await registration.pushManager.subscribe({
