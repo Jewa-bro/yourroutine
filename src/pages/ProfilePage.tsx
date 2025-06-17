@@ -235,12 +235,22 @@ const ProfilePage: React.FC = () => {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => {
+                      onClick={async () => {
                         if (Notification.permission === 'granted') {
-                          new Notification('브라우저 알림 테스트', {
-                            body: '브라우저 기본 알림이 정상 작동합니다!',
-                            icon: '/logo192.svg'
-                          });
+                          // 모바일에서는 서비스워커를 통해 알림 표시
+                          if ('serviceWorker' in navigator) {
+                            const registration = await navigator.serviceWorker.ready;
+                            await registration.showNotification('브라우저 알림 테스트', {
+                              body: '브라우저 기본 알림이 정상 작동합니다!',
+                              icon: '/logo192.svg'
+                            });
+                          } else {
+                            // 데스크톱에서는 기본 알림 사용
+                            new Notification('브라우저 알림 테스트', {
+                              body: '브라우저 기본 알림이 정상 작동합니다!',
+                              icon: '/logo192.svg'
+                            });
+                          }
                         } else {
                           toast.error('알림 권한이 필요합니다.');
                         }

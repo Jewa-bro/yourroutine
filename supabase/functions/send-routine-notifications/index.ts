@@ -78,7 +78,7 @@ serve(async (req) => {
         contactInformation: 'mailto:your-email@example.com',
         vapidKeys,
       });
-
+      
       for (const sub of subscriptions) {
         try {
           const subscriber = appServer.subscribe(sub.subscription_data);
@@ -105,4 +105,4 @@ serve(async (req) => {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
-});
+}); 
